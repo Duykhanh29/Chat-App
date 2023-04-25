@@ -8,6 +8,7 @@ class MessageController extends GetxController {
   RxList<User> listUser = <User>[].obs;
   RxList<MessageData> listMessageData = <MessageData>[].obs;
   RxList<MessageData> searchListMessageData = <MessageData>[].obs;
+  RxList<User> searchListUser = <User>[].obs;
   @override
   void onInit() {
     // TODO: implement onInit
@@ -36,7 +37,7 @@ class MessageController extends GetxController {
             "https://topten.review/wp-content/uploads/sites/3/2022/02/VanceAI-Image-Sharpener-700-360@2x-300x154.png");
     User user4 = User(
         id: "ID04",
-        name: "Nguyen Hung",
+        name: "Nguyen Hung1",
         userStatus: UserStatus.OFFLINE,
         story: true,
         urlImage:
@@ -73,7 +74,7 @@ class MessageController extends GetxController {
         name: "Mai Thu Hà",
         story: true,
         urlImage:
-            "https://instagram.fsgn2-9.fna.fbcdn.net/v/t51.2885-19/334286927_586427636875421_6166844634128991401_n.jpg?stp=dst-jpg_s320x320&_nc_ht=instagram.fsgn2-9.fna.fbcdn.net&_nc_cat=105&_nc_ohc=IAlRcbr3EWEAX8RO8vn&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_AfC4urX9YZkif96OUIrl6TdD2Go0TWXwkKfViVmIkavnqQ&oe=643B6FE4&_nc_sid=8fd12b",
+            "https://instagram.fsgn2-9.fna.fbcdn.net/v/t51.2885-19/334286927_586427636875421_6166844634128991401_n.jpg?stp=dst-jpg_s320x320&_nc_ht=instagram.fsgn2-9.fna.fbcdn.net&_nc_cat=105&_nc_ohc=5TtknBo6eUMAX9yFdnd&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_AfA9nrEwalgCe9FuReFvpdGJDaDGZ4_D7Jvhyk_SDE6ukA&oe=644947A4&_nc_sid=8fd12b",
         userStatus: UserStatus.ONLINE);
     User user10 = User(
         id: "ID010",
@@ -99,279 +100,621 @@ class MessageController extends GetxController {
         user: user1,
         listMessages: [
           Message(
-              "Dang Duy Khanh wants to love Mai Thu Ha. I hope we will be in the relationship. Mai Thu Ha say that she loves Dang Duy Khanh. Dang Duy Khanh loves Mai Thu Ha too",
-              ChatMessageType.TEXT,
-              false,
-              MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4)),
-              true),
+              text:
+                  "Dang Duy Khanh wants to love Mai Thu Ha. I hope we will be in the relationship. Mai Thu Ha say that she loves Dang Duy Khanh. Dang Duy Khanh loves Mai Thu Ha too",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
+              isSeen: true),
           Message(
-              "I",
-              ChatMessageType.TEXT,
-              true,
-              MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4, seconds: 30)),
-              true),
-          Message("Oke", ChatMessageType.AUDIO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 3)), true),
-          Message("you", ChatMessageType.VIDEO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 3)), true),
+              text: "I",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now()
+                  .subtract(const Duration(minutes: 4, seconds: 30)),
+              isSeen: true),
           Message(
-              "https://64.media.tumblr.com/8b4c01edd9f4c95f92197a961dd7b1af/2177eda79af71270-7e/s1280x1920/920265619ec74632fd83faca04abaddb5d7b3e38.jpg",
-              ChatMessageType.IMAGE,
-              true,
-              MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 2)),
-              false),
-          Message("Oke", ChatMessageType.TEXT, false, MessageStatus.RECEIVED,
-              DateTime.now().subtract(const Duration(minutes: 1)), false),
-          Message("Nha", ChatMessageType.TEXT, false, MessageStatus.SENT,
-              DateTime.now().subtract(const Duration(minutes: 0)), true),
+              text: "Oke",
+              chatMessageType: ChatMessageType.AUDIO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+              isSeen: true),
+          Message(
+              text:
+                  "https://www.youtube.com/watch?v=PwkxZq5Ef4g&list=RDMM&index=2",
+              chatMessageType: ChatMessageType.VIDEO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+              isSeen: true),
+          Message(
+              text:
+                  "https://64.media.tumblr.com/8b4c01edd9f4c95f92197a961dd7b1af/2177eda79af71270-7e/s1280x1920/920265619ec74632fd83faca04abaddb5d7b3e38.jpg",
+              chatMessageType: ChatMessageType.IMAGE,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
+              isSeen: false),
+          Message(
+              text: "Oke",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.RECEIVED,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
+              isSeen: false),
+          Message(
+              text: "https://www.youtube.com/",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: true),
         ],
       ),
       MessageData(
         user: user2,
         listMessages: [
-          Message("text", ChatMessageType.TEXT, false, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4)), true),
           Message(
-              "https://media-cdn-v2.laodong.vn/storage/newsportal/2023/2/17/1148971/Lee-Je-Hoon-01.jpg",
-              ChatMessageType.IMAGE,
-              true,
-              MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4, seconds: 30)),
-              true),
-          Message("Oke", ChatMessageType.AUDIO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 3)), true),
-          Message("you", ChatMessageType.VIDEO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 3)), true),
-          Message("guys", ChatMessageType.TEXT, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 2)), false),
-          Message("Oke", ChatMessageType.TEXT, false, MessageStatus.RECEIVED,
-              DateTime.now().subtract(const Duration(minutes: 1)), false),
-          Message("Nha", ChatMessageType.TEXT, false, MessageStatus.SENT,
-              DateTime.now().subtract(const Duration(minutes: 0)), false),
+              text: "https://www.youtube.com/",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
+              isSeen: true),
+          Message(
+              text:
+                  "https://media-cdn-v2.laodong.vn/storage/newsportal/2023/2/17/1148971/Lee-Je-Hoon-01.jpg",
+              chatMessageType: ChatMessageType.IMAGE,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now()
+                  .subtract(const Duration(minutes: 4, seconds: 30)),
+              isSeen: true),
+          Message(
+              text: "Oke",
+              chatMessageType: ChatMessageType.AUDIO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+              isSeen: true),
+          Message(
+              text:
+                  "https://www.youtube.com/watch?v=1KCHzbgu4no&list=RDMM&start_radio=1&rv=nSBMAQpvMjE",
+              chatMessageType: ChatMessageType.VIDEO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+              isSeen: true),
+          Message(
+              text: "guys",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
+              isSeen: false),
+          Message(
+              text: "https://www.youtube.com/",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.RECEIVED,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
+              isSeen: false),
+          Message(
+              text: "Nha",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: false),
         ],
       ),
       MessageData(
         user: user3,
         listMessages: [
-          Message("text", ChatMessageType.TEXT, false, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4)), true),
           Message(
-              "I",
-              ChatMessageType.TEXT,
-              true,
-              MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4, seconds: 30)),
-              true),
-          Message("Oke", ChatMessageType.AUDIO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 3)), true),
-          Message("you", ChatMessageType.VIDEO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 3)), true),
-          Message("guys", ChatMessageType.TEXT, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 2)), true),
-          Message("Oke", ChatMessageType.TEXT, false, MessageStatus.RECEIVED,
-              DateTime.now().subtract(const Duration(minutes: 1)), true),
-          Message("Nha", ChatMessageType.AUDIO, false, MessageStatus.SENT,
-              DateTime.now().subtract(const Duration(minutes: 0)), false),
+              text: "text",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
+              isSeen: true),
           Message(
-              "https://bloganchoi.com/wp-content/uploads/2021/05/lee-je-hoon-chia-se.jpg",
-              ChatMessageType.IMAGE,
-              false,
-              MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4)),
-              false),
+              text: "I",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now()
+                  .subtract(const Duration(minutes: 4, seconds: 30)),
+              isSeen: true),
           Message(
-              "I",
-              ChatMessageType.TEXT,
-              true,
-              MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4, seconds: 30)),
-              false),
-          Message("Oke", ChatMessageType.AUDIO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 3)), false),
-          Message("you", ChatMessageType.VIDEO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 3)), false),
-          Message("guys", ChatMessageType.TEXT, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 2)), false),
-          Message("Oke", ChatMessageType.TEXT, false, MessageStatus.RECEIVED,
-              DateTime.now().subtract(const Duration(minutes: 1)), false),
-          Message("Nha", ChatMessageType.TEXT, true, MessageStatus.SENT,
-              DateTime.now().subtract(const Duration(minutes: 0)), true),
+              text: "Oke",
+              chatMessageType: ChatMessageType.AUDIO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+              isSeen: true),
+          Message(
+              text:
+                  "https://www.youtube.com/watch?v=nSBMAQpvMjE&list=RDGMEMYH9CUrFO7CfLJpaD7UR85w&start_radio=1&rv=HXkh7EOqcQ4",
+              chatMessageType: ChatMessageType.VIDEO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+              isSeen: true),
+          Message(
+              text: "https://www.youtube.com/",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
+              isSeen: true),
+          Message(
+              text: "Oke",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.RECEIVED,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
+              isSeen: true),
+          Message(
+              text: "Nha",
+              chatMessageType: ChatMessageType.AUDIO,
+              isSender: false,
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: false),
+          Message(
+              text:
+                  "https://bloganchoi.com/wp-content/uploads/2021/05/lee-je-hoon-chia-se.jpg",
+              chatMessageType: ChatMessageType.IMAGE,
+              isSender: false,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
+              isSeen: false),
+          Message(
+              text: "https://www.youtube.com/",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now()
+                  .subtract(const Duration(minutes: 4, seconds: 30)),
+              isSeen: false),
+          Message(
+              text: "Oke",
+              chatMessageType: ChatMessageType.AUDIO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+              isSeen: false),
+          Message(
+              text: "you",
+              chatMessageType: ChatMessageType.VIDEO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+              isSeen: false),
+          Message(
+              text: "https://www.youtube.com/",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
+              isSeen: false),
+          Message(
+              text: "Oke",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.RECEIVED,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
+              isSeen: false),
+          Message(
+              text: "Nha",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: true),
+          Message(
+              text: "Nha",
+              chatMessageType: ChatMessageType.VIDEOCALL,
+              isSender: true,
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: true,
+              longTime: 200),
         ],
       ),
       MessageData(
         user: user4,
         listMessages: [
-          Message("text", ChatMessageType.TEXT, false, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4)), true),
           Message(
-              "I",
-              ChatMessageType.TEXT,
-              true,
-              MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4, seconds: 30)),
-              true),
-          Message("Oke", ChatMessageType.AUDIO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 3)), true),
-          Message("you", ChatMessageType.VIDEO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 3)), true),
-          Message("guys", ChatMessageType.TEXT, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 2)), true),
-          Message("Oke", ChatMessageType.TEXT, false, MessageStatus.RECEIVED,
-              DateTime.now().subtract(const Duration(minutes: 1)), true),
-          Message("Nha", ChatMessageType.AUDIO, false, MessageStatus.SENT,
-              DateTime.now().subtract(const Duration(minutes: 0)), true),
-          Message("text", ChatMessageType.TEXT, false, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4)), false),
+              text: "text",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
+              isSeen: true),
           Message(
-              "I",
-              ChatMessageType.TEXT,
-              true,
-              MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4, seconds: 30)),
-              false),
-          Message("Oke", ChatMessageType.AUDIO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 3)), false),
-          Message("you", ChatMessageType.VIDEO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 3)), false),
+              text: "https://www.youtube.com/",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now()
+                  .subtract(const Duration(minutes: 4, seconds: 30)),
+              isSeen: true),
           Message(
-              "https://media.doisongphapluat.com/media/trieu-phuong-linh/2023/04/03/kim-do-ki-phat-hien-black-sun-la-cau-lac-bo-co-nhieu-te-nan11.png",
-              ChatMessageType.IMAGE,
-              true,
-              MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 2)),
-              false),
-          Message("Oke", ChatMessageType.TEXT, false, MessageStatus.RECEIVED,
-              DateTime.now().subtract(const Duration(minutes: 1)), false),
-          Message("Nha", ChatMessageType.TEXT, true, MessageStatus.SENT,
-              DateTime.now().subtract(const Duration(days: 1)), true),
+              text: "Oke",
+              chatMessageType: ChatMessageType.AUDIO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+              isSeen: true),
+          Message(
+              text: "https://www.youtube.com/watch?v=HXkh7EOqcQ4",
+              chatMessageType: ChatMessageType.VIDEO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+              isSeen: true),
+          Message(
+              text: "guys",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
+              isSeen: true),
+          Message(
+              text: "Oke",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.RECEIVED,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
+              isSeen: true),
+          Message(
+              text: "Nha",
+              chatMessageType: ChatMessageType.AUDIO,
+              isSender: false,
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: true),
+          Message(
+              text: "https://www.youtube.com/",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
+              isSeen: false),
+          Message(
+              text: "I",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now()
+                  .subtract(const Duration(minutes: 4, seconds: 30)),
+              isSeen: false),
+          Message(
+              text: "Oke",
+              chatMessageType: ChatMessageType.AUDIO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+              isSeen: false),
+          Message(
+              text: "you",
+              chatMessageType: ChatMessageType.VIDEO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+              isSeen: false),
+          Message(
+              text:
+                  "https://media.doisongphapluat.com/media/trieu-phuong-linh/2023/04/03/kim-do-ki-phat-hien-black-sun-la-cau-lac-bo-co-nhieu-te-nan11.png",
+              chatMessageType: ChatMessageType.IMAGE,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
+              isSeen: false),
+          Message(
+              text: "Oke",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.RECEIVED,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
+              isSeen: false),
+          Message(
+              text: "Nha",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(days: 1)),
+              isSeen: true),
+          Message(
+              text: "Nha",
+              chatMessageType: ChatMessageType.VIDEOCALL,
+              isSender: true,
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(days: 1)),
+              isSeen: true,
+              longTime: 500),
         ],
       ),
       MessageData(
         user: user5,
         listMessages: [
-          Message("text", ChatMessageType.TEXT, false, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4)), true),
           Message(
-              "I",
-              ChatMessageType.TEXT,
-              true,
-              MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4, seconds: 30)),
-              true),
-          Message("Oke", ChatMessageType.AUDIO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 3)), true),
-          Message("you", ChatMessageType.VIDEO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 3)), true),
-          Message("guys", ChatMessageType.TEXT, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 2)), true),
-          Message("Oke", ChatMessageType.TEXT, false, MessageStatus.RECEIVED,
-              DateTime.now().subtract(const Duration(minutes: 1)), true),
-          Message("Nha", ChatMessageType.AUDIO, false, MessageStatus.SENT,
-              DateTime.now().subtract(const Duration(minutes: 0)), true),
-          Message("text", ChatMessageType.TEXT, false, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4)), true),
+              text: "text",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
+              isSeen: true),
           Message(
-              "I",
-              ChatMessageType.TEXT,
-              true,
-              MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4, seconds: 30)),
-              true),
-          Message("Oke", ChatMessageType.AUDIO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 3)), true),
-          Message("you", ChatMessageType.VIDEO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 3)), true),
+              text: "I",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now()
+                  .subtract(const Duration(minutes: 4, seconds: 30)),
+              isSeen: true),
           Message(
-              "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcToJtu9c8Iil2zz9fANpsHn5woO7LpVPWojiOihh69viRXL2X5Pob_IDFW1emFgYkVORwA&usqp=CAU",
-              ChatMessageType.IMAGE,
-              true,
-              MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 2)),
-              false),
-          Message("Oke", ChatMessageType.TEXT, false, MessageStatus.RECEIVED,
-              DateTime.now().subtract(const Duration(minutes: 1)), false),
-          Message("Nha", ChatMessageType.TEXT, false, MessageStatus.SENT,
-              DateTime.now().subtract(const Duration(minutes: 0)), false),
+              text: "Oke",
+              chatMessageType: ChatMessageType.AUDIO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+              isSeen: true),
+          Message(
+              text: "https://www.youtube.com/watch?v=QWvXm_AppeE",
+              chatMessageType: ChatMessageType.VIDEO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+              isSeen: true),
+          Message(
+              text: "guys",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
+              isSeen: true),
+          Message(
+              text: "Oke",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.RECEIVED,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
+              isSeen: true),
+          Message(
+              text: "Nha",
+              chatMessageType: ChatMessageType.AUDIO,
+              isSender: false,
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: true),
+          Message(
+              text: "text",
+              chatMessageType: ChatMessageType.CALL,
+              isSender: false,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
+              isSeen: true,
+              longTime: 100),
+          Message(
+              text: "https://www.youtube.com/",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now()
+                  .subtract(const Duration(minutes: 4, seconds: 30)),
+              isSeen: true),
+          Message(
+              text: "Oke",
+              chatMessageType: ChatMessageType.AUDIO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+              isSeen: true),
+          Message(
+              text: "you",
+              chatMessageType: ChatMessageType.VIDEO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+              isSeen: true),
+          Message(
+              text:
+                  "https://images2.minutemediacdn.com/image/upload/c_crop,w_4000,h_2250,x_0,y_96/c_fill,w_1440,ar_16:9,f_auto,q_auto,g_auto/images/GettyImages/mmsport/90min_en_international_web/01grp5mzkmtn0ef8dzjz.jpg",
+              chatMessageType: ChatMessageType.IMAGE,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
+              isSeen: false),
+          Message(
+              text: "Oke",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.RECEIVED,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
+              isSeen: false),
+          Message(
+              text: "Nha",
+              chatMessageType: ChatMessageType.CALL,
+              isSender: false,
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: false,
+              longTime: 230),
         ],
       ),
       MessageData(
         user: user6,
         listMessages: [
-          Message("text", ChatMessageType.TEXT, false, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4)), true),
           Message(
-              "I",
-              ChatMessageType.TEXT,
-              true,
-              MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4, seconds: 30)),
-              true),
-          Message("Oke", ChatMessageType.AUDIO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 3)), true),
-          Message("you", ChatMessageType.VIDEO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 3)), true),
-          Message("guys", ChatMessageType.TEXT, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 2)), true),
-          Message("Oke", ChatMessageType.TEXT, false, MessageStatus.RECEIVED,
-              DateTime.now().subtract(const Duration(minutes: 1)), true),
-          Message("Nha", ChatMessageType.AUDIO, false, MessageStatus.SENT,
-              DateTime.now().subtract(const Duration(minutes: 0)), true),
-          Message("text", ChatMessageType.TEXT, false, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4)), true),
+              text: "text",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
+              isSeen: true),
           Message(
-              "I",
-              ChatMessageType.TEXT,
-              true,
-              MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4, seconds: 30)),
-              true),
+              text: "I",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now()
+                  .subtract(const Duration(minutes: 4, seconds: 30)),
+              isSeen: true),
           Message(
-              "Oke",
-              ChatMessageType.AUDIO,
-              true,
-              MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 2, seconds: 30)),
-              true),
-          Message("you", ChatMessageType.VIDEO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 3)), true),
-          Message("guys", ChatMessageType.TEXT, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 2)), false),
+              text: "Oke",
+              chatMessageType: ChatMessageType.AUDIO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+              isSeen: true),
           Message(
-              "https://i.ytimg.com/vi/JF29HwVuXlc/maxresdefault.jpg",
-              ChatMessageType.IMAGE,
-              false,
-              MessageStatus.RECEIVED,
-              DateTime.now().subtract(const Duration(minutes: 1)),
-              false),
-          Message("Nani", ChatMessageType.TEXT, true, MessageStatus.SENT,
-              DateTime.now().subtract(const Duration(minutes: 0)), true),
+              text:
+                  "https://www.youtube.com/watch?v=Zi9To04PO78&list=RDZi9To04PO78&start_radio=1",
+              chatMessageType: ChatMessageType.VIDEO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+              isSeen: true),
+          Message(
+              text: "guys",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
+              isSeen: true),
+          Message(
+              text: "Oke",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.RECEIVED,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
+              isSeen: true),
+          Message(
+              text: "Nha",
+              chatMessageType: ChatMessageType.AUDIO,
+              isSender: false,
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: true),
+          Message(
+              text: "text",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
+              isSeen: true),
+          Message(
+              text: "I",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now()
+                  .subtract(const Duration(minutes: 4, seconds: 30)),
+              isSeen: true),
+          Message(
+              text: "Oke",
+              chatMessageType: ChatMessageType.AUDIO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now()
+                  .subtract(const Duration(minutes: 2, seconds: 30)),
+              isSeen: true),
+          Message(
+              text: "you",
+              chatMessageType: ChatMessageType.VIDEO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+              isSeen: true),
+          Message(
+              text: "https://translate.google.com/?hl=vi",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
+              isSeen: false),
+          Message(
+              text: "https://i.ytimg.com/vi/JF29HwVuXlc/maxresdefault.jpg",
+              chatMessageType: ChatMessageType.IMAGE,
+              isSender: false,
+              messageStatus: MessageStatus.RECEIVED,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
+              isSeen: false),
+          Message(
+              text: "Nani",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: true),
+          Message(
+              chatMessageType: ChatMessageType.CALL,
+              isSender: true,
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: true,
+              longTime: 320),
         ],
       ),
       MessageData(
         user: user8,
         listMessages: [
-          Message("text", ChatMessageType.TEXT, false, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 4)), true),
-          Message("I", ChatMessageType.TEXT, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(days: 3)), true),
-          Message("Oke", ChatMessageType.AUDIO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(days: 3)), true),
-          Message("you", ChatMessageType.VIDEO, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(days: 3)), true),
-          Message("guys", ChatMessageType.TEXT, true, MessageStatus.SEEN,
-              DateTime.now().subtract(const Duration(minutes: 2)), true),
           Message(
-              "https://assets.ayobandung.com/crop/0x0:0x0/750x500/webp/photo/2023/02/18/lee-je-hoon-285042092.jpg",
-              ChatMessageType.IMAGE,
-              false,
-              MessageStatus.RECEIVED,
-              DateTime.now().subtract(const Duration(minutes: 1)),
-              true),
-          Message("Nha", ChatMessageType.TEXT, true, MessageStatus.SENT,
-              DateTime.now().subtract(const Duration(minutes: 0)), true),
+              text: "text",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: false,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
+              isSeen: true),
+          Message(
+              text: "I",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(days: 3)),
+              isSeen: true),
+          Message(
+              text: "Oke",
+              chatMessageType: ChatMessageType.AUDIO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(days: 3)),
+              isSeen: true),
+          Message(
+              text: "https://www.youtube.com/watch?v=eegl7of4g-o",
+              chatMessageType: ChatMessageType.VIDEO,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(days: 3)),
+              isSeen: true),
+          Message(
+              text: "guys",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SEEN,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
+              isSeen: true),
+          Message(
+              text:
+                  "https://assets.ayobandung.com/crop/0x0:0x0/750x500/webp/photo/2023/02/18/lee-je-hoon-285042092.jpg",
+              chatMessageType: ChatMessageType.IMAGE,
+              isSender: false,
+              messageStatus: MessageStatus.RECEIVED,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
+              isSeen: true),
+          Message(
+              text: "Nha",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: true),
         ],
       ),
     ];
@@ -420,13 +763,16 @@ class MessageController extends GetxController {
     }
   }
 
-  bool removeMessageDataWithoutMessage(MessageData messageData) {
-    if (listMessageData.contains(messageData)) {
-      if (messageData.listMessages!.isEmpty) {
-        return listMessageData.value.remove(messageData);
+  void deleteAConversation(String id) {
+    for (var data in listMessageData.value) {
+      if (data.user!.id == id) {
+        data.listMessages != [];
       }
     }
-    return false;
+  }
+
+  int sizeOfMessages(MessageData messageData) {
+    return messageData.listMessages!.length;
   }
 
   List<MessageData> getListMessageData(List<MessageData> messageDataList) {
@@ -446,16 +792,6 @@ class MessageController extends GetxController {
     return list;
   }
 
-  int getListMessageDataLength() {
-    int count = 0;
-    for (var data in listMessageData) {
-      if (!removeMessageDataWithoutMessage(data)) {
-        count++;
-      }
-    }
-    return count;
-  }
-
   void filterListMessageData(String userName) {
     List<MessageData> list = [];
     if (userName.isEmpty) {
@@ -467,8 +803,32 @@ class MessageController extends GetxController {
               .toLowerCase()
               .contains(userName.toLowerCase()))
           .toList();
+      if (list.isEmpty) {
+        List<User> userList = [];
+        List<User> result = [];
+        for (var user in listUser) {
+          if (!isCheckExistUser(listMessageData.value, user)) {
+            userList.add(user);
+          }
+        }
+        searchListUser.value = userList
+            .where((data) => data.name
+                .toString()
+                .toLowerCase()
+                .contains(userName.toLowerCase()))
+            .toList();
+      }
       print("Size of list: ${list.length}");
     }
     searchListMessageData.value = list;
+  }
+
+  bool isCheckExistUser(List<MessageData> list, User user) {
+    for (var data in list) {
+      if (user.id == data.user!.id) {
+        return true;
+      }
+    }
+    return false;
   }
 }

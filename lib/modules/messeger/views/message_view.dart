@@ -60,6 +60,10 @@ class MessageView extends GetView<MessageController> {
                           child: IconButton(
                               onPressed: () {
                                 print("add story");
+                                for (var data in controller.listMessageData) {
+                                  print(
+                                      "Numbers of chatting with user: ${data.user!.name} and id: ${data.user!.id} and size: ${data.listMessages!.length}");
+                                }
                               },
                               icon: const Icon(
                                 Icons.add,
@@ -85,7 +89,6 @@ class MessageView extends GetView<MessageController> {
                         scrollDirection: Axis.horizontal,
                         itemBuilder: (context, index) {
                           User user = listUser[index];
-                          print("Check user: ${user.id}");
 
                           return UserOnline(
                             user: user,

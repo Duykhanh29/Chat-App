@@ -10,4 +10,5 @@ abstract class _Paths {
   static const PROFILE = '/profile';
   static const MAINVIEW = '/mainview';
   static const MESSAGE = '/message';
+  static const GROUP = '/group';
 }

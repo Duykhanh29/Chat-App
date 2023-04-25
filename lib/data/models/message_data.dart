@@ -16,8 +16,15 @@ class Message {
   MessageStatus? messageStatus;
   bool? isSender;
   ChatMessageType? chatMessageType;
-  Message(this.text, this.chatMessageType, this.isSender, this.messageStatus,
-      this.dateTime, this.isSeen);
+  int? longTime;
+  Message(
+      {this.text,
+      this.chatMessageType,
+      this.isSender,
+      this.messageStatus,
+      this.dateTime,
+      this.isSeen,
+      this.longTime});
 }
 
 enum MessageStatus {
@@ -34,4 +41,6 @@ enum ChatMessageType {
   ICON,
   IMAGE,
   VIDEO,
+  CALL,
+  VIDEOCALL,
 }

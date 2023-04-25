@@ -41,18 +41,59 @@ class AChat extends StatelessWidget {
 
   Text displayMessage(MessageData data) {
     if (data.listMessages!.last.isSender!) {
-      if (data.listMessages!.last.isSeen!) {
+      if (!data.listMessages!.last.isSeen!) {
+        if (data.listMessages!.last.chatMessageType ==
+                ChatMessageType.VIDEOCALL ||
+            data.listMessages!.last.chatMessageType == ChatMessageType.CALL) {
+          return const Text(
+            "The call ended",
+            style: TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+          );
+        } else if (data.listMessages!.last.chatMessageType ==
+                ChatMessageType.VIDEO ||
+            data.listMessages!.last.chatMessageType == ChatMessageType.AUDIO ||
+            data.listMessages!.last.chatMessageType == ChatMessageType.ICON ||
+            data.listMessages!.last.chatMessageType == ChatMessageType.IMAGE ||
+            data.listMessages!.last.chatMessageType == ChatMessageType.MEME) {
+          return const Text(
+            "An attachment is sent",
+            style: TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+          );
+        }
         return Text(
           data.listMessages!.last.text!,
-          overflow: TextOverflow.ellipsis,
+          style:
+              const TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
         );
       }
     }
+    if (data.listMessages!.last.chatMessageType == ChatMessageType.VIDEOCALL ||
+        data.listMessages!.last.chatMessageType == ChatMessageType.CALL) {
+      return const Text(
+        "The call ended",
+        overflow: TextOverflow.ellipsis,
+      );
+    } else if (data.listMessages!.last.chatMessageType ==
+            ChatMessageType.VIDEO ||
+        data.listMessages!.last.chatMessageType == ChatMessageType.AUDIO ||
+        data.listMessages!.last.chatMessageType == ChatMessageType.ICON ||
+        data.listMessages!.last.chatMessageType == ChatMessageType.IMAGE ||
+        data.listMessages!.last.chatMessageType == ChatMessageType.MEME) {
+      return const Text(
+        "An attachment is sent",
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+
     return Text(
       data.listMessages!.last.text!,
       overflow: TextOverflow.ellipsis,
-      style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
     );
+    // return Text(
+    //   data.listMessages!.last.text!,
+    //   overflow: TextOverflow.ellipsis,
+    //   style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+    // );
   }
 
   AChat({super.key, required this.messageData});
@@ -60,22 +101,38 @@ class AChat extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<MessageController>();
     // TODO: implement build
-    int length = messageData.listMessages!.length;
     var list = messageData.listMessages;
-    return Dismissible(
-      key: Key(messageData.user!.id!),
-      //onDismissed: ,
-      direction: DismissDirection.endToStart,
-
-      background: Container(
-        color: Colors.red,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        child: const Icon(
-          Icons.delete,
-          color: Colors.blue,
-        ),
-      ),
+    return
+        // Dismissible(
+        //   key: Key(messageData.user!.id!),
+        //   onDismissed: (direction) {
+        //     // print('Size nha: ${controller.listMessageData.length}');
+        //     // var listData = controller.listMessageData;
+        //     // print(
+        //     //     "ListData size: #${controller.getListMessageData(listData).length}");
+        //     // controller.deleteAConversation(messageData.user!.id!);
+        //     // print('Size nha1: ${controller.listMessageData.length}');
+        //     // var listData1 = controller.listMessageData;
+        //     // print(
+        //     //     "ListData size1: #${controller.getListMessageData(listData1).length}");
+        //     // print("SIze messages: ${controller.sizeOfMessages(messageData)}");
+        //   },
+        //   direction: DismissDirection.endToStart,
+        //   background: Container(
+        //     color: Colors.red,
+        //     alignment: Alignment.centerRight,
+        //     padding: const EdgeInsets.only(right: 20),
+        //     child: const Icon(
+        //       Icons.delete,
+        //       color: Colors.blue,
+        //     ),
+        //   ),
+        //   child:
+        Container(
+      decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          color: const Color.fromARGB(255, 135, 177, 254)),
+      margin: const EdgeInsets.only(bottom: 3),
       child: ListTile(
         onTap: () {
           Get.to(() => ChattingPage(), arguments: messageData);
@@ -101,6 +158,7 @@ class AChat extends StatelessWidget {
           ),
         ),
         //  ),
+        // ),
       ),
     );
   }

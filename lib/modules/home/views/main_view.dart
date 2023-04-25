@@ -1,5 +1,4 @@
 import 'package:chat_app/modules/home/controllers/home_controller.dart';
-import 'package:chat_app/modules/home/views/home_view.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
 import 'package:chat_app/modules/messeger/views/message_view.dart';
 import 'package:chat_app/modules/profile/controllers/profile_controller.dart';
@@ -9,37 +8,17 @@ import 'package:flutter/src/widgets/placeholder.dart';
 import 'package:chat_app/modules/profile/views/profile_view.dart';
 import 'package:get/get.dart';
 
-class MainView extends StatefulWidget {
-  const MainView({super.key});
+class MainView extends GetView<HomeController> {
+  MainView({super.key});
 
-  @override
-  State<MainView> createState() => _MainViewState();
-}
-
-class _MainViewState extends State<MainView> {
-  int currentPage = 0;
-  List<Widget> pages = [
-    MessageView(),
-    const ProfileView(),
-  ];
-  void changePage(int index) {
-    setState(() {
-      currentPage = index;
-    });
-  }
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    Get.put(MessageController());
-    Get.put(ProfileController());
-  }
-
+  // int currentPage = 0;
   final controller = Get.put(HomeController());
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.find<HomeController>();
+    // Get.put(MessageController());
+    // Get.put(ProfileController());
     return Scaffold(
       resizeToAvoidBottomInset: false,
       bottomNavigationBar: BottomNavigationBar(
@@ -47,7 +26,7 @@ class _MainViewState extends State<MainView> {
         backgroundColor: Colors.amber,
         selectedFontSize: 8,
         onTap: (value) {
-          changePage(value);
+          controller.updatePageIndex(value);
         },
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
@@ -58,16 +37,24 @@ class _MainViewState extends State<MainView> {
               label: "Messeger"),
           BottomNavigationBarItem(
               icon: Icon(
+                Icons.group_rounded,
+                color: Colors.blue,
+              ),
+              label: "Group"),
+          BottomNavigationBarItem(
+              icon: Icon(
                 Icons.person_2,
                 color: Colors.blue,
               ),
               label: "Profile"),
         ],
-        currentIndex: currentPage,
+        currentIndex: controller.currentPageINdex.value,
       ),
-      body: IndexedStack(
-        index: currentPage,
-        children: pages,
+      body: Obx(
+        () => IndexedStack(
+          index: controller.currentPageINdex.value,
+          children: controller.page,
+        ),
       ),
     );
   }

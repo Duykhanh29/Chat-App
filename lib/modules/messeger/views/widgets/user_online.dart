@@ -15,7 +15,6 @@ class UserOnline extends GetView<MessageController> {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<MessageController>();
-    print("User id check today: ${user.id}");
 
     return Column(
       children: <Widget>[

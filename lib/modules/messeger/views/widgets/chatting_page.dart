@@ -2,7 +2,7 @@ import 'package:chat_app/data/models/message_data.dart';
 import 'package:chat_app/data/models/user.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
 import 'package:chat_app/modules/messeger/views/widgets/message_tile.dart';
-import 'package:chat_app/modules/messeger/views/widgets/video_call.dart';
+import 'package:chat_app/modules/messeger/views/widgets/call_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
@@ -69,7 +69,6 @@ class ChattingPage extends GetView<MessageController> {
     final controller = Get.find<MessageController>();
     MessageData? messageData = Get.arguments;
     List<Message>? list = getListMessages(messageData);
-    print("Length nha: ${list!.length}");
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -137,37 +136,35 @@ class ChattingPage extends GetView<MessageController> {
         actions: [
           FittedBox(
               child: IconButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Get.to(() => CallPage(), arguments: messageData);
+                  },
                   icon: messageData.user!.userStatus! == UserStatus.ONLINE
                       ? const Icon(
                           Icons.local_phone_outlined,
                           color: Colors.orange,
-                          size: 20,
+                          size: 24,
                         )
                       : const Icon(
                           Icons.local_phone,
-                          size: 20,
+                          size: 24,
                         ))),
           FittedBox(
               child: IconButton(
-                  onPressed: () {
-                    Get.to(() => const VideoCall());
-                  },
+                  onPressed: () {},
                   icon: messageData.user!.userStatus! == UserStatus.ONLINE
                       ? const Icon(
                           Icons.videocam_outlined,
-                          size: 20,
+                          size: 24,
                           color: Colors.orange,
                         )
                       : const Icon(
                           Icons.videocam,
-                          size: 20,
+                          size: 24,
                         )))
         ],
       ),
       body: Obx(() {
-        print("Check build");
-
         var data = controller.listMessageData
             .firstWhere((data) => data.user!.id == messageData.user!.id);
         final messageList = data.listMessages!.reversed.toList();
@@ -205,12 +202,12 @@ class ChattingPage extends GetView<MessageController> {
                                 messageStatus = MessageStatus.SEEN;
                               }
                               Message message = Message(
-                                  "Hello",
-                                  ChatMessageType.TEXT,
-                                  false,
-                                  messageStatus,
-                                  DateTime.now(),
-                                  false);
+                                  text: "Hello",
+                                  chatMessageType: ChatMessageType.TEXT,
+                                  isSeen: false,
+                                  messageStatus: messageStatus,
+                                  dateTime: DateTime.now(),
+                                  isSender: false);
                               controller.sentAMessage(
                                   message, messageData.user!);
                             },
@@ -242,6 +239,7 @@ class ChattingPage extends GetView<MessageController> {
                               (data) => data.user!.id == messageData.user!.id);
                           final messageList =
                               data.listMessages!.reversed.toList();
+
                           return GroupedListView<Message, DateTime>(
                             order: GroupedListOrder.DESC,
                             elements: messageList,
@@ -253,10 +251,13 @@ class ChattingPage extends GetView<MessageController> {
                               );
                             },
                             physics: const BouncingScrollPhysics(),
-                            reverse: false,
+                            reverse: true,
                             floatingHeader: true,
                             shrinkWrap: true,
                             useStickyGroupSeparators: true,
+                            itemComparator: (message1, message2) => message1
+                                .dateTime!
+                                .compareTo(message2.dateTime!),
                             groupHeaderBuilder: (message) => SizedBox(
                               height: 30,
                               child: Center(
@@ -286,20 +287,6 @@ class ChattingPage extends GetView<MessageController> {
                               );
                             },
                           );
-                          // ListView.builder(
-                          //   //   controller: scrollController,
-                          //   physics: const BouncingScrollPhysics(),
-                          //   shrinkWrap: true,
-                          //   reverse: true,
-                          //   itemBuilder: (context, index) {
-                          //     return MessageTile(
-                          //       message: messageList[index],
-                          //       user: data.user!,
-                          //     );
-                          //     // return Text(messageList[index].text!);
-                          //   },
-                          //   itemCount: messageList.length,
-                          // );
                         }),
                       ),
                     ),
@@ -340,7 +327,7 @@ class ChattingPage extends GetView<MessageController> {
                             icon: const Icon(Icons.photo)),
                         prefixIcon: IconButton(
                           onPressed: () {},
-                          icon: const Icon(Icons.sentiment_satisfied_sharp),
+                          icon: const Icon(Icons.attach_file_outlined),
                         ),
                         hintText: "Type messages",
                         border: OutlineInputBorder(
@@ -353,6 +340,8 @@ class ChattingPage extends GetView<MessageController> {
                   ),
                   IconButton(
                     onPressed: () {
+                      // notice
+                      // before take action, we need to stop everything is running such as stopping listen audio or video
                       MessageStatus messageStatus;
                       if (messageData.user!.userStatus == UserStatus.ONLINE) {
                         messageStatus = MessageStatus.RECEIVED;
@@ -366,12 +355,12 @@ class ChattingPage extends GetView<MessageController> {
                         messageStatus = MessageStatus.SEEN;
                       }
                       Message message = Message(
-                          messageController.text,
-                          ChatMessageType.TEXT,
-                          false,
-                          messageStatus,
-                          DateTime.now(),
-                          false);
+                          text: messageController.text,
+                          chatMessageType: ChatMessageType.TEXT,
+                          isSeen: false,
+                          messageStatus: messageStatus,
+                          dateTime: DateTime.now(),
+                          isSender: false);
                       controller.sentAMessage(message, messageData.user!);
                       messageController.text = "";
                     },

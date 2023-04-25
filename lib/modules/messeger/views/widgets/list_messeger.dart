@@ -1,5 +1,7 @@
 import 'package:chat_app/data/models/message_data.dart';
+import 'package:chat_app/data/models/user.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
+import 'package:chat_app/modules/messeger/views/widgets/a_user_online.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +15,6 @@ class ListMesseger extends GetView<MessageController> {
   Widget build(BuildContext context) {
     final accountController = Get.find<MessageController>();
     List<MessageData> listMessageData = accountController.listMessageData.value;
-    print("size: ${listMessageData.length}");
     return Flexible(
       child: Container(
         width: MediaQuery.of(context).size.width,
@@ -25,20 +26,35 @@ class ListMesseger extends GetView<MessageController> {
         child: Obx(
           () {
             int size = accountController.searchListMessageData.length;
-            return ListView.separated(
-                itemBuilder: (context, index) {
-                  return AChat(
-                    messageData: accountController.getListMessageData(
-                        accountController.searchListMessageData)[index],
-                  );
-                },
-                separatorBuilder: (context, index) => const Divider(
-                      color: Colors.black26,
-                      height: 2,
-                    ),
-                itemCount: accountController
+            List<User> listUser = [];
+            return accountController
                     .getListMessageData(accountController.searchListMessageData)
-                    .length);
+                    .isEmpty
+                ? ListView.separated(
+                    itemBuilder: (context, index) {
+                      return AUserOnline(
+                          user: accountController.searchListUser[index]);
+                    },
+                    separatorBuilder: (context, index) => const Divider(
+                          color: Colors.black26,
+                          height: 2,
+                        ),
+                    itemCount: accountController.searchListUser.length)
+                : ListView.separated(
+                    itemBuilder: (context, index) {
+                      return AChat(
+                        messageData: accountController.getListMessageData(
+                            accountController.searchListMessageData)[index],
+                      );
+                    },
+                    separatorBuilder: (context, index) => const Divider(
+                          color: Colors.black26,
+                          height: 2,
+                        ),
+                    itemCount: accountController
+                        .getListMessageData(
+                            accountController.searchListMessageData)
+                        .length);
           },
         ),
       ),
