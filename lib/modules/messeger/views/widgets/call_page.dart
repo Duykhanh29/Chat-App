@@ -268,7 +268,9 @@ class _CallPageState extends State<CallPage> {
                 } else {
                   messageStatus = MessageStatus.SEEN;
                 }
+                int size = messageData.listMessages!.length + 1;
                 Message message = Message(
+                    idMessage: "ID0${size}",
                     chatMessageType: ChatMessageType.CALL,
                     isSeen: false,
                     messageStatus: messageStatus,

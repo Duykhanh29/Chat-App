@@ -9,6 +9,16 @@ class MessageController extends GetxController {
   RxList<MessageData> listMessageData = <MessageData>[].obs;
   RxList<MessageData> searchListMessageData = <MessageData>[].obs;
   RxList<User> searchListUser = <User>[].obs;
+  RxBool isSearch = false.obs; // it is used for chatting_details
+  RxInt searchMessageIndex = RxInt(-1);
+  TextEditingController searchController = TextEditingController(text: "");
+  RxBool isRecorder = false.obs;
+  RxBool isChoosen = false.obs;
+  RxString deletedID = "".obs;
+  RxBool deleteJustForYou = false.obs;
+  RxBool isReply = false.obs;
+  Message? replyMessage;
+  User? replyToUser;
   @override
   void onInit() {
     // TODO: implement onInit
@@ -71,17 +81,17 @@ class MessageController extends GetxController {
             "https://play-lh.googleusercontent.com/MqXH34arO8Yb0Wm8UVw99eknd1a4Oltj959fls29wlfo9xHg5oKdi9RlgliORSQGSltklw");
     User user9 = User(
         id: "ID09",
-        name: "Mai Thu Hà",
+        name: "David James",
         story: true,
         urlImage:
-            "https://instagram.fsgn2-9.fna.fbcdn.net/v/t51.2885-19/334286927_586427636875421_6166844634128991401_n.jpg?stp=dst-jpg_s320x320&_nc_ht=instagram.fsgn2-9.fna.fbcdn.net&_nc_cat=105&_nc_ohc=5TtknBo6eUMAX9yFdnd&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_AfA9nrEwalgCe9FuReFvpdGJDaDGZ4_D7Jvhyk_SDE6ukA&oe=644947A4&_nc_sid=8fd12b",
+            "https://images.freeimages.com/images/previews/e6e/cn-tower-1636717.jpg",
         userStatus: UserStatus.ONLINE);
     User user10 = User(
         id: "ID010",
         name: "natural",
         story: true,
         urlImage:
-            "https://www.searchenginejournal.com/wp-content/uploads/2022/06/image-search-1600-x-840-px-62c6dc4ff1eee-sej-1520x800.webp",
+            "https://images.unsplash.com/photo-1566438480900-0609be27a4be?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8aW1hZ2V8ZW58MHx8MHx8&w=1000&q=80",
         userStatus: UserStatus.ONLINE);
     listUser.value = [
       user1,
@@ -100,14 +110,16 @@ class MessageController extends GetxController {
         user: user1,
         listMessages: [
           Message(
+              idMessage: "ID01",
               text:
-                  "Dang Duy Khanh wants to love Mai Thu Ha. I hope we will be in the relationship. Mai Thu Ha say that she loves Dang Duy Khanh. Dang Duy Khanh loves Mai Thu Ha too",
+                  "The above code specifies that our app should execute a command when there is a match in the string specified in the first argument that is passed to our intent function call.",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
               messageStatus: MessageStatus.SEEN,
               dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
               isSeen: true),
           Message(
+              idMessage: "ID02",
               text: "I",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -116,6 +128,7 @@ class MessageController extends GetxController {
                   .subtract(const Duration(minutes: 4, seconds: 30)),
               isSeen: true),
           Message(
+              idMessage: "ID03",
               text: "Oke",
               chatMessageType: ChatMessageType.AUDIO,
               isSender: true,
@@ -123,6 +136,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
               isSeen: true),
           Message(
+              idMessage: "ID04",
               text:
                   "https://www.youtube.com/watch?v=PwkxZq5Ef4g&list=RDMM&index=2",
               chatMessageType: ChatMessageType.VIDEO,
@@ -131,6 +145,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
               isSeen: true),
           Message(
+              idMessage: "ID05",
               text:
                   "https://64.media.tumblr.com/8b4c01edd9f4c95f92197a961dd7b1af/2177eda79af71270-7e/s1280x1920/920265619ec74632fd83faca04abaddb5d7b3e38.jpg",
               chatMessageType: ChatMessageType.IMAGE,
@@ -139,6 +154,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
               isSeen: false),
           Message(
+              idMessage: "ID06",
               text: "Oke",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
@@ -146,6 +162,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
               isSeen: false),
           Message(
+              idMessage: "ID07",
               text: "https://www.youtube.com/",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
@@ -158,6 +175,7 @@ class MessageController extends GetxController {
         user: user2,
         listMessages: [
           Message(
+              idMessage: "ID01",
               text: "https://www.youtube.com/",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
@@ -165,6 +183,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
               isSeen: true),
           Message(
+              idMessage: "ID02",
               text:
                   "https://media-cdn-v2.laodong.vn/storage/newsportal/2023/2/17/1148971/Lee-Je-Hoon-01.jpg",
               chatMessageType: ChatMessageType.IMAGE,
@@ -174,13 +193,15 @@ class MessageController extends GetxController {
                   .subtract(const Duration(minutes: 4, seconds: 30)),
               isSeen: true),
           Message(
-              text: "Oke",
+              idMessage: "ID03",
+              text: "audios/SonTingMTP.mp3",
               chatMessageType: ChatMessageType.AUDIO,
               isSender: true,
               messageStatus: MessageStatus.SEEN,
               dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
               isSeen: true),
           Message(
+              idMessage: "ID04",
               text:
                   "https://www.youtube.com/watch?v=1KCHzbgu4no&list=RDMM&start_radio=1&rv=nSBMAQpvMjE",
               chatMessageType: ChatMessageType.VIDEO,
@@ -189,6 +210,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
               isSeen: true),
           Message(
+              idMessage: "ID05",
               text: "guys",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -196,6 +218,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
               isSeen: false),
           Message(
+              idMessage: "ID06",
               text: "https://www.youtube.com/",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
@@ -203,6 +226,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
               isSeen: false),
           Message(
+              idMessage: "ID07",
               text: "Nha",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
@@ -215,6 +239,7 @@ class MessageController extends GetxController {
         user: user3,
         listMessages: [
           Message(
+              idMessage: "ID01",
               text: "text",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
@@ -222,6 +247,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
               isSeen: true),
           Message(
+              idMessage: "ID02",
               text: "I",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -230,13 +256,15 @@ class MessageController extends GetxController {
                   .subtract(const Duration(minutes: 4, seconds: 30)),
               isSeen: true),
           Message(
-              text: "Oke",
+              idMessage: "ID03",
+              text: "audios/SonTingMTP.mp3",
               chatMessageType: ChatMessageType.AUDIO,
               isSender: true,
               messageStatus: MessageStatus.SEEN,
               dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
               isSeen: true),
           Message(
+              idMessage: "ID04",
               text:
                   "https://www.youtube.com/watch?v=nSBMAQpvMjE&list=RDGMEMYH9CUrFO7CfLJpaD7UR85w&start_radio=1&rv=HXkh7EOqcQ4",
               chatMessageType: ChatMessageType.VIDEO,
@@ -245,6 +273,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
               isSeen: true),
           Message(
+              idMessage: "ID05",
               text: "https://www.youtube.com/",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -252,6 +281,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
               isSeen: true),
           Message(
+              idMessage: "ID06",
               text: "Oke",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
@@ -259,13 +289,15 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
               isSeen: true),
           Message(
-              text: "Nha",
+              idMessage: "ID07",
+              text: "audios/SonTingMTP.mp3",
               chatMessageType: ChatMessageType.AUDIO,
               isSender: false,
               messageStatus: MessageStatus.SENT,
               dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
               isSeen: false),
           Message(
+              idMessage: "ID08",
               text:
                   "https://bloganchoi.com/wp-content/uploads/2021/05/lee-je-hoon-chia-se.jpg",
               chatMessageType: ChatMessageType.IMAGE,
@@ -274,6 +306,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
               isSeen: false),
           Message(
+              idMessage: "ID09",
               text: "https://www.youtube.com/",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -282,13 +315,15 @@ class MessageController extends GetxController {
                   .subtract(const Duration(minutes: 4, seconds: 30)),
               isSeen: false),
           Message(
-              text: "Oke",
+              idMessage: "ID10",
+              text: "audios/SonTingMTP.mp3",
               chatMessageType: ChatMessageType.AUDIO,
               isSender: true,
               messageStatus: MessageStatus.SEEN,
               dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
               isSeen: false),
           Message(
+              idMessage: "ID11",
               text: "you",
               chatMessageType: ChatMessageType.VIDEO,
               isSender: true,
@@ -296,6 +331,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
               isSeen: false),
           Message(
+              idMessage: "ID12",
               text: "https://www.youtube.com/",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -303,6 +339,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
               isSeen: false),
           Message(
+              idMessage: "ID13",
               text: "Oke",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
@@ -310,6 +347,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
               isSeen: false),
           Message(
+              idMessage: "ID14",
               text: "Nha",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -317,6 +355,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
               isSeen: true),
           Message(
+              idMessage: "ID15",
               text: "Nha",
               chatMessageType: ChatMessageType.VIDEOCALL,
               isSender: true,
@@ -330,6 +369,7 @@ class MessageController extends GetxController {
         user: user4,
         listMessages: [
           Message(
+              idMessage: "ID01",
               text: "text",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
@@ -337,6 +377,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
               isSeen: true),
           Message(
+              idMessage: "ID02",
               text: "https://www.youtube.com/",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -345,13 +386,15 @@ class MessageController extends GetxController {
                   .subtract(const Duration(minutes: 4, seconds: 30)),
               isSeen: true),
           Message(
-              text: "Oke",
+              idMessage: "ID03",
+              text: "audios/SonTingMTP.mp3",
               chatMessageType: ChatMessageType.AUDIO,
               isSender: true,
               messageStatus: MessageStatus.SEEN,
               dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
               isSeen: true),
           Message(
+              idMessage: "ID04",
               text: "https://www.youtube.com/watch?v=HXkh7EOqcQ4",
               chatMessageType: ChatMessageType.VIDEO,
               isSender: true,
@@ -359,6 +402,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
               isSeen: true),
           Message(
+              idMessage: "ID05",
               text: "guys",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -366,6 +410,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
               isSeen: true),
           Message(
+              idMessage: "ID06",
               text: "Oke",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
@@ -373,13 +418,15 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
               isSeen: true),
           Message(
-              text: "Nha",
+              idMessage: "ID07",
+              text: "audios/SonTingMTP.mp3",
               chatMessageType: ChatMessageType.AUDIO,
               isSender: false,
               messageStatus: MessageStatus.SENT,
               dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
               isSeen: true),
           Message(
+              idMessage: "ID08",
               text: "https://www.youtube.com/",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
@@ -387,6 +434,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
               isSeen: false),
           Message(
+              idMessage: "ID09",
               text: "I",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -395,13 +443,15 @@ class MessageController extends GetxController {
                   .subtract(const Duration(minutes: 4, seconds: 30)),
               isSeen: false),
           Message(
-              text: "Oke",
+              idMessage: "ID10",
+              text: "audios/SonTingMTP.mp3",
               chatMessageType: ChatMessageType.AUDIO,
               isSender: true,
               messageStatus: MessageStatus.SEEN,
               dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
               isSeen: false),
           Message(
+              idMessage: "ID11",
               text: "you",
               chatMessageType: ChatMessageType.VIDEO,
               isSender: true,
@@ -409,6 +459,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
               isSeen: false),
           Message(
+              idMessage: "ID12",
               text:
                   "https://media.doisongphapluat.com/media/trieu-phuong-linh/2023/04/03/kim-do-ki-phat-hien-black-sun-la-cau-lac-bo-co-nhieu-te-nan11.png",
               chatMessageType: ChatMessageType.IMAGE,
@@ -417,6 +468,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
               isSeen: false),
           Message(
+              idMessage: "ID13",
               text: "Oke",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
@@ -424,6 +476,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
               isSeen: false),
           Message(
+              idMessage: "ID14",
               text: "Nha",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -431,6 +484,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(days: 1)),
               isSeen: true),
           Message(
+              idMessage: "ID15",
               text: "Nha",
               chatMessageType: ChatMessageType.VIDEOCALL,
               isSender: true,
@@ -444,6 +498,7 @@ class MessageController extends GetxController {
         user: user5,
         listMessages: [
           Message(
+              idMessage: "ID01",
               text: "text",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
@@ -451,6 +506,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
               isSeen: true),
           Message(
+              idMessage: "ID02",
               text: "I",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -459,13 +515,15 @@ class MessageController extends GetxController {
                   .subtract(const Duration(minutes: 4, seconds: 30)),
               isSeen: true),
           Message(
-              text: "Oke",
+              idMessage: "ID03",
+              text: "audios/SonTingMTP.mp3",
               chatMessageType: ChatMessageType.AUDIO,
               isSender: true,
               messageStatus: MessageStatus.SEEN,
               dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
               isSeen: true),
           Message(
+              idMessage: "ID04",
               text: "https://www.youtube.com/watch?v=QWvXm_AppeE",
               chatMessageType: ChatMessageType.VIDEO,
               isSender: true,
@@ -473,6 +531,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
               isSeen: true),
           Message(
+              idMessage: "ID05",
               text: "guys",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -480,6 +539,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
               isSeen: true),
           Message(
+              idMessage: "ID06",
               text: "Oke",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
@@ -487,13 +547,15 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
               isSeen: true),
           Message(
-              text: "Nha",
+              idMessage: "ID07",
+              text: "audios/SonTingMTP.mp3",
               chatMessageType: ChatMessageType.AUDIO,
               isSender: false,
               messageStatus: MessageStatus.SENT,
               dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
               isSeen: true),
           Message(
+              idMessage: "ID08",
               text: "text",
               chatMessageType: ChatMessageType.CALL,
               isSender: false,
@@ -502,6 +564,7 @@ class MessageController extends GetxController {
               isSeen: true,
               longTime: 100),
           Message(
+              idMessage: "ID09",
               text: "https://www.youtube.com/",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -510,13 +573,15 @@ class MessageController extends GetxController {
                   .subtract(const Duration(minutes: 4, seconds: 30)),
               isSeen: true),
           Message(
-              text: "Oke",
+              idMessage: "ID10",
+              text: "audios/SonTingMTP.mp3",
               chatMessageType: ChatMessageType.AUDIO,
               isSender: true,
               messageStatus: MessageStatus.SEEN,
               dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
               isSeen: true),
           Message(
+              idMessage: "ID11",
               text: "you",
               chatMessageType: ChatMessageType.VIDEO,
               isSender: true,
@@ -524,6 +589,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
               isSeen: true),
           Message(
+              idMessage: "ID12",
               text:
                   "https://images2.minutemediacdn.com/image/upload/c_crop,w_4000,h_2250,x_0,y_96/c_fill,w_1440,ar_16:9,f_auto,q_auto,g_auto/images/GettyImages/mmsport/90min_en_international_web/01grp5mzkmtn0ef8dzjz.jpg",
               chatMessageType: ChatMessageType.IMAGE,
@@ -532,6 +598,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
               isSeen: false),
           Message(
+              idMessage: "ID13",
               text: "Oke",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
@@ -539,6 +606,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
               isSeen: false),
           Message(
+              idMessage: "ID14",
               text: "Nha",
               chatMessageType: ChatMessageType.CALL,
               isSender: false,
@@ -552,6 +620,7 @@ class MessageController extends GetxController {
         user: user6,
         listMessages: [
           Message(
+              idMessage: "ID01",
               text: "text",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
@@ -559,6 +628,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
               isSeen: true),
           Message(
+              idMessage: "ID02",
               text: "I",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -567,13 +637,15 @@ class MessageController extends GetxController {
                   .subtract(const Duration(minutes: 4, seconds: 30)),
               isSeen: true),
           Message(
-              text: "Oke",
+              idMessage: "ID03",
+              text: "audios/SonTingMTP.mp3",
               chatMessageType: ChatMessageType.AUDIO,
               isSender: true,
               messageStatus: MessageStatus.SEEN,
               dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
               isSeen: true),
           Message(
+              idMessage: "ID04",
               text:
                   "https://www.youtube.com/watch?v=Zi9To04PO78&list=RDZi9To04PO78&start_radio=1",
               chatMessageType: ChatMessageType.VIDEO,
@@ -582,6 +654,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
               isSeen: true),
           Message(
+              idMessage: "ID05",
               text: "guys",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -589,6 +662,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
               isSeen: true),
           Message(
+              idMessage: "ID06",
               text: "Oke",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
@@ -596,13 +670,15 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
               isSeen: true),
           Message(
-              text: "Nha",
+              idMessage: "ID07",
+              text: "audios/SonTingMTP.mp3",
               chatMessageType: ChatMessageType.AUDIO,
               isSender: false,
               messageStatus: MessageStatus.SENT,
               dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
               isSeen: true),
           Message(
+              idMessage: "ID08",
               text: "text",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
@@ -610,6 +686,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
               isSeen: true),
           Message(
+              idMessage: "ID09",
               text: "I",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -618,7 +695,8 @@ class MessageController extends GetxController {
                   .subtract(const Duration(minutes: 4, seconds: 30)),
               isSeen: true),
           Message(
-              text: "Oke",
+              idMessage: "ID10",
+              text: "audios/SonTingMTP.mp3",
               chatMessageType: ChatMessageType.AUDIO,
               isSender: true,
               messageStatus: MessageStatus.SEEN,
@@ -626,6 +704,7 @@ class MessageController extends GetxController {
                   .subtract(const Duration(minutes: 2, seconds: 30)),
               isSeen: true),
           Message(
+              idMessage: "ID11",
               text: "you",
               chatMessageType: ChatMessageType.VIDEO,
               isSender: true,
@@ -633,6 +712,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
               isSeen: true),
           Message(
+              idMessage: "ID12",
               text: "https://translate.google.com/?hl=vi",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -640,6 +720,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
               isSeen: false),
           Message(
+              idMessage: "ID13",
               text: "https://i.ytimg.com/vi/JF29HwVuXlc/maxresdefault.jpg",
               chatMessageType: ChatMessageType.IMAGE,
               isSender: false,
@@ -647,6 +728,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
               isSeen: false),
           Message(
+              idMessage: "ID14",
               text: "Nani",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -654,6 +736,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
               isSeen: true),
           Message(
+              idMessage: "ID15",
               chatMessageType: ChatMessageType.CALL,
               isSender: true,
               messageStatus: MessageStatus.SENT,
@@ -666,6 +749,7 @@ class MessageController extends GetxController {
         user: user8,
         listMessages: [
           Message(
+              idMessage: "ID01",
               text: "text",
               chatMessageType: ChatMessageType.TEXT,
               isSender: false,
@@ -673,6 +757,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
               isSeen: true),
           Message(
+              idMessage: "ID02",
               text: "I",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -680,13 +765,15 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(days: 3)),
               isSeen: true),
           Message(
-              text: "Oke",
+              idMessage: "ID03",
+              text: "audios/SonTingMTP.mp3",
               chatMessageType: ChatMessageType.AUDIO,
               isSender: true,
               messageStatus: MessageStatus.SEEN,
               dateTime: DateTime.now().subtract(const Duration(days: 3)),
               isSeen: true),
           Message(
+              idMessage: "ID04",
               text: "https://www.youtube.com/watch?v=eegl7of4g-o",
               chatMessageType: ChatMessageType.VIDEO,
               isSender: true,
@@ -694,6 +781,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(days: 3)),
               isSeen: true),
           Message(
+              idMessage: "ID05",
               text: "guys",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
@@ -701,6 +789,7 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
               isSeen: true),
           Message(
+              idMessage: "ID06",
               text:
                   "https://assets.ayobandung.com/crop/0x0:0x0/750x500/webp/photo/2023/02/18/lee-je-hoon-285042092.jpg",
               chatMessageType: ChatMessageType.IMAGE,
@@ -709,9 +798,102 @@ class MessageController extends GetxController {
               dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
               isSeen: true),
           Message(
+              idMessage: "ID07",
               text: "Nha",
               chatMessageType: ChatMessageType.TEXT,
               isSender: true,
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: true),
+          Message(
+              idMessage: "ID08",
+              text: "Nha",
+              chatMessageType: ChatMessageType.TEXT,
+              isSender: true,
+              isRepy: true,
+              replyToUser: User(
+                  id: "ID15",
+                  name: "It is me",
+                  story: false,
+                  urlImage:
+                      "https://instagram.fhan4-1.fna.fbcdn.net/v/t51.2885-19/334286927_586427636875421_6166844634128991401_n.jpg?stp=dst-jpg_s320x320&_nc_ht=instagram.fhan4-1.fna.fbcdn.net&_nc_cat=105&_nc_ohc=pDVik-ckiDwAX-PAVrO&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_AfBvn46L-WvBOX3rtJJ0sHPcfB-Hrh4r19cwogLYIO7Igw&oe=64571F64&_nc_sid=8fd12b",
+                  userStatus: UserStatus.ONLINE),
+              idReplyText: "Oke",
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: true),
+          Message(
+              idMessage: "ID09",
+              text:
+                  "https://assets.goal.com/v3/assets/bltcc7a7ffd2fbf71f5/blt4cf439c6adcd9edc/64365f75ecfd62869e093e8b/Luka_Modric_Real_Madrid_2022-23_(2).jpg",
+              chatMessageType: ChatMessageType.IMAGE,
+              isSender: true,
+              replyToUser: user8,
+              isRepy: true,
+              idReplyText: "ID06",
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: true),
+          Message(
+              idMessage: "ID10",
+              text:
+                  "https://assets.goal.com/v3/assets/bltcc7a7ffd2fbf71f5/blt4cf439c6adcd9edc/64365f75ecfd62869e093e8b/Luka_Modric_Real_Madrid_2022-23_(2).jpg",
+              chatMessageType: ChatMessageType.IMAGE,
+              isSender: true,
+              isDeleted: true,
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: true),
+          Message(
+              idMessage: "ID11",
+              text:
+                  "https://www.youtube.com/watch?v=x8Hv2Cst3oY&list=WL&index=9",
+              chatMessageType: ChatMessageType.VIDEO,
+              isSender: false,
+              isRepy: true,
+              replyToUser: user8,
+              idReplyText: "ID04",
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: true),
+          Message(
+              idMessage: "ID12",
+              text:
+                  "https://www.youtube.com/watch?v=x8Hv2Cst3oY&list=WL&index=9",
+              chatMessageType: ChatMessageType.VIDEO,
+              isSender: false,
+              isDeleted: true,
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: true),
+          Message(
+              idMessage: "ID13",
+              text: "audios/SonTingMTP.mp3",
+              chatMessageType: ChatMessageType.AUDIO,
+              isSender: false,
+              isDeleted: true,
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: true),
+          Message(
+              idMessage: "ID14",
+              text: "audios/SonTingMTP.mp3",
+              chatMessageType: ChatMessageType.AUDIO,
+              isSender: false,
+              isRepy: true,
+              idReplyText: "ID03",
+              replyToUser: user8,
+              messageStatus: MessageStatus.SENT,
+              dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
+              isSeen: true),
+          Message(
+              idMessage: "ID15",
+              text: "audios/SonTingMTP.mp3",
+              chatMessageType: ChatMessageType.AUDIO,
+              isSender: false,
+              isRepy: true,
+              idReplyText: "ID03",
+              replyToUser: user8,
               messageStatus: MessageStatus.SENT,
               dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
               isSeen: true),
@@ -719,6 +901,7 @@ class MessageController extends GetxController {
       ),
     ];
     searchListMessageData.value = listMessageData;
+    //searchController.text = "";
   }
 
   @override
@@ -830,5 +1013,131 @@ class MessageController extends GetxController {
       }
     }
     return false;
+  }
+
+  void searchMode() {
+    isSearch.value = true;
+  }
+
+  void cancelSearch() {
+    isSearch.value = false;
+  }
+
+  void stopSearch(String value, MessageData data) {
+    for (int i = 0; i < data.listMessages!.length; i++) {
+      if (data.listMessages![i].chatMessageType == ChatMessageType.TEXT) {
+        if (value.toLowerCase().toString() ==
+            data.listMessages![i].text!.toLowerCase().toString()) {
+          data.listMessages![i].isSearch = false;
+          searchController.text = "";
+        }
+      }
+    }
+  }
+
+  void searchMessages(String value, MessageData data) {
+    for (int i = 0; i < data.listMessages!.length; i++) {
+      if (data.listMessages![i].chatMessageType == ChatMessageType.TEXT) {
+        print("Text: ${data.listMessages![i].text}");
+        if (value.toLowerCase().toString() ==
+            data.listMessages![i].text!.toLowerCase().toString()) {
+          print("Text: ${data.listMessages![i].text}");
+          data.listMessages![i].isSearch = true;
+          searchController.text = value;
+        } else {
+          print("Text wrong: ${data.listMessages![i].text}");
+          data.listMessages![i].isSearch = false;
+        }
+      }
+    }
+  }
+
+  void changeRecorder() {
+    isRecorder.value = !isRecorder.value;
+  }
+
+  void changeIsChoose() {
+    isChoosen.value = !isChoosen.value;
+  }
+
+  void toggleDeleteID(String value) {
+    deletedID.value = value;
+  }
+
+  Message? findMessageFromID(String id, MessageData messageData) {
+    for (var element in messageData.listMessages!) {
+      if (element.idMessage! == id) {
+        return element;
+      }
+    }
+  }
+
+  int differenceHours(Message message) {
+    return DateTime.now().difference(message.dateTime!).inHours;
+  }
+
+  void deleteAMessage(String id, MessageData messageData,
+      {bool justForYou = false}) {
+    for (int i = 0; i < listMessageData.length; i++) {
+      if (listMessageData[i].user!.id == messageData.user!.id) {
+        for (int j = 0; j < messageData.listMessages!.length; j++) {
+          if (messageData.listMessages![j].idMessage == id) {
+            if (justForYou) {
+              listMessageData[i].listMessages![j].isDeleted = true;
+              deleteJustForYou.value = true;
+            } else {
+              if (differenceHours(listMessageData[i].listMessages![j]) < 3) {
+                listMessageData[i].listMessages![j].isDeleted = true;
+                listMessageData[i].listMessages![j].text = "NULL";
+              } else {
+                listMessageData[i].listMessages![j].isDeleted = true;
+              }
+            }
+          }
+        }
+      }
+    }
+    listMessageData.refresh(); // update data
+    resetDeleteForYou();
+  }
+
+  void resetDeleteForYou() {
+    deleteJustForYou.value = false;
+  }
+
+  void changeisReply() {
+    isReply.value = !isReply.value;
+  }
+
+  void changeReplyMessage(Message message, User user) {
+    replyMessage = message;
+    replyToUser = user;
+    update();
+  }
+
+  void resetReplyMessage() {
+    replyMessage = null;
+    replyToUser = null;
+    update();
+  }
+
+  void printListDataMessage(MessageData messageData) {
+    for (var element in messageData.listMessages!) {
+      print(
+          "ID: ${element.idMessage} and text: ${element.text} and type: ${element.chatMessageType} ");
+    }
+  }
+
+  Message findMessageFromIdAndUser(String id, User user) {
+    for (var element in listMessageData) {
+      if (element.user == user) {
+        for (var data in element.listMessages!) {
+          if (data.idMessage == id) {
+            return data;
+          }
+        }
+      }
+    }
+    return Message();
   }
 }

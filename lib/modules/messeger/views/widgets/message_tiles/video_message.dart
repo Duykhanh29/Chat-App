@@ -1,13 +1,18 @@
+import 'package:chat_app/data/models/user.dart';
+import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
+import 'package:chat_app/modules/messeger/views/widgets/message_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import 'package:chat_app/data/models/message_data.dart';
 
 class VideoMessage extends StatelessWidget {
-  VideoMessage({super.key, required this.message});
+  VideoMessage({super.key, required this.message, required this.user});
   Message message;
+  User user;
   bool isYoutubeUrl(String url) {
     // Regular expression to match YouTube video URLs
 
@@ -19,16 +24,76 @@ class VideoMessage extends StatelessWidget {
     return youtubeUrlPattern.hasMatch(url);
   }
 
+  double size = 130;
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: MediaQuery.of(context).size.width * 0.6,
-      height: 130,
-      child: isYoutubeUrl(message.text!) == true
-          ? YoutubeVideo(message: message)
-          : VideoPlay(
-              message: message,
+    final controller = Get.find<MessageController>();
+    Message? replyMessage;
+    if (message.isRepy) {
+      replyMessage = controller.findMessageFromIdAndUser(
+          message.idReplyText!, message.replyToUser!);
+      print(
+          "New Value at ${message.idMessage}: ID: ${replyMessage.idMessage} text: ${replyMessage.text} type: ${replyMessage.chatMessageType}");
+    }
+    if (message.isRepy) {
+      size = 210;
+    } else {
+      size = 130;
+    }
+    return Container(
+      width: MediaQuery.of(context).size.width * 0.75,
+      height: size,
+      child: Column(
+        mainAxisAlignment:
+            message.isSender! ? MainAxisAlignment.start : MainAxisAlignment.end,
+        crossAxisAlignment: message.isSender!
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.end,
+        children: [
+          if (message.isRepy) ...{
+            BuildReplyMessage(
+                replyMessage: replyMessage!, replyUser: message.replyToUser!)
+          },
+          Flexible(
+            child: Row(
+              mainAxisAlignment: message.isSender!
+                  ? MainAxisAlignment.start
+                  : MainAxisAlignment.end,
+              children: [
+                if (!message.isSender!) ...{
+                  SharedIcon(size: size),
+                  const SizedBox(
+                    width: 15,
+                  ),
+                },
+                GestureDetector(
+                  onLongPress: () {
+                    // if (!message.isSender!) {
+                    controller.changeIsChoose();
+                    controller.toggleDeleteID(message.idMessage!);
+                    // }
+                  },
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.6,
+                    height: 130,
+                    child: isYoutubeUrl(message.text!) == true
+                        ? YoutubeVideo(message: message)
+                        : VideoPlay(
+                            message: message,
+                          ),
+                  ),
+                ),
+                if (message.isSender!) ...{
+                  const SizedBox(
+                    width: 15,
+                  ),
+                  SharedIcon(size: size)
+                }
+              ],
             ),
+          ),
+        ],
+      ),
     );
   }
 }

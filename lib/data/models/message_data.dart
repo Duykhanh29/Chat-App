@@ -10,6 +10,8 @@ class MessageData {
 }
 
 class Message {
+  bool isDeleted;
+  bool isSearch;
   bool? isSeen;
   DateTime? dateTime;
   String? text;
@@ -17,6 +19,10 @@ class Message {
   bool? isSender;
   ChatMessageType? chatMessageType;
   int? longTime;
+  String? idMessage;
+  bool isRepy;
+  String? idReplyText;
+  User? replyToUser;
   Message(
       {this.text,
       this.chatMessageType,
@@ -24,7 +30,13 @@ class Message {
       this.messageStatus,
       this.dateTime,
       this.isSeen,
-      this.longTime});
+      this.longTime,
+      this.isSearch = false,
+      this.idMessage,
+      this.isDeleted = false,
+      this.isRepy = false,
+      this.idReplyText,
+      this.replyToUser});
 }
 
 enum MessageStatus {

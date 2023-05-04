@@ -2,20 +2,32 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:chat_app/data/models/user.dart';
+import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
+import 'package:chat_app/modules/messeger/views/widgets/message_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:chat_app/data/models/message_data.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+import 'package:path/path.dart' as path;
 
 class AudioMessage extends StatefulWidget {
-  AudioMessage({super.key, required this.message});
+  AudioMessage({super.key, required this.message, required this.user});
   Message message;
+  User user;
 
   @override
   State<AudioMessage> createState() => _AudioMessageState();
 }
 
 class _AudioMessageState extends State<AudioMessage> {
-  String audioAssest = "assets/audios/SonTingMTP.mp3";
+  String audioAssest() {
+    if (widget.message.text != "audios/SonTingMTP.mp3") {
+      return "";
+    }
+    return "audios/SonTingMTP.mp3";
+  }
+
   bool isDisposed = false;
   bool isPlaying = false;
   Duration duration = Duration.zero;
@@ -80,83 +92,163 @@ class _AudioMessageState extends State<AudioMessage> {
     await audioPlayer.dispose();
   }
 
+  late double size;
   @override
   Widget build(BuildContext context) {
+    final controller = Get.find<MessageController>();
+    Message? replyMessage;
+    if (widget.message.isRepy) {
+      replyMessage = controller.findMessageFromIdAndUser(
+          widget.message.idReplyText!, widget.message.replyToUser!);
+      print(
+          "New Value at id ${widget.message.idMessage}: ID: ${replyMessage.idMessage} text: ${replyMessage.text} type: ${replyMessage.chatMessageType}");
+    }
+    if (widget.message.isRepy) {
+      size = 120;
+    } else {
+      size = 40;
+    }
     return Container(
-      // margin: const EdgeInsets.only(top: 15, left: 15, right: 15),
-      width: MediaQuery.of(context).size.width * 0.6,
-      padding: const EdgeInsets.only(right: 10),
-      height: 40,
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 192, 253, 168),
-        borderRadius: widget.message.isSender!
-            ? const BorderRadius.only(
-                topLeft: Radius.circular(30),
-                topRight: Radius.circular(30),
-                bottomRight: Radius.circular(30),
-              )
-            : const BorderRadius.only(
-                topLeft: Radius.circular(30),
-                topRight: Radius.circular(30),
-                bottomLeft: Radius.circular(30),
-              ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          //  FittedBox(
-          // child:
-          Container(
-            width: 30,
-            height: double.infinity,
-            child: IconButton(
-              onPressed: () {
-                if (isPlaying) {
-                  setState(() {
-                    isPlaying = false;
-                  });
-                  audioPlayer.pause();
-                } else {
-                  audioPlayer.play(AssetSource("audios/SonTingMTP.mp3"));
-                  setState(() {
-                    isPlaying = true;
-                  });
-                }
-              },
-              icon: Icon(
-                isPlaying ? Icons.pause : Icons.play_arrow,
-                color:
-                    widget.message.isSender! ? Colors.amberAccent : Colors.red,
+      width: MediaQuery.of(context).size.width * 0.8,
+      //  padding: const EdgeInsets.only(right: 10),
+      height: size,
+      child: Column(
+          mainAxisAlignment: widget.message.isSender!
+              ? MainAxisAlignment.start
+              : MainAxisAlignment.end,
+          crossAxisAlignment: widget.message.isSender!
+              ? CrossAxisAlignment.start
+              : CrossAxisAlignment.end,
+          children: [
+            if (widget.message.isRepy) ...{
+              //if (widget.message.isSender!) ...{
+              BuildReplyMessage(
+                  replyMessage: replyMessage!,
+                  replyUser: widget.message.replyToUser!)
+              // } else ...{
+              //   BuildReplyMessage(message: widget.message)
+              // }
+            },
+            Flexible(
+              child: Row(
+                mainAxisAlignment: widget.message.isSender!
+                    ? MainAxisAlignment.start
+                    : MainAxisAlignment.end,
+                children: [
+                  if (!widget.message.isSender!) ...{
+                    SharedIcon(size: size),
+                    const SizedBox(
+                      width: 15,
+                    ),
+                  },
+                  GestureDetector(
+                    onLongPress: () {
+                      // if (!widget.message.isSender!) {
+                      controller.changeIsChoose();
+                      controller.toggleDeleteID(widget.message.idMessage!);
+                      // }
+                    },
+                    child: Container(
+                      width: MediaQuery.of(context).size.width * 0.6,
+                      padding: const EdgeInsets.only(right: 10),
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color.fromARGB(255, 192, 253, 168),
+                        borderRadius: widget.message.isSender!
+                            ? const BorderRadius.only(
+                                topLeft: Radius.circular(30),
+                                topRight: Radius.circular(30),
+                                bottomRight: Radius.circular(30),
+                              )
+                            : const BorderRadius.only(
+                                topLeft: Radius.circular(30),
+                                topRight: Radius.circular(30),
+                                bottomLeft: Radius.circular(30),
+                              ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          //  FittedBox(
+                          // child:
+                          Container(
+                            width: 30,
+                            height: double.infinity,
+                            child: IconButton(
+                              onPressed: () {
+                                if (isPlaying) {
+                                  setState(() {
+                                    isPlaying = false;
+                                  });
+                                  audioPlayer.pause();
+                                } else {
+                                  if (widget.message.text ==
+                                      "audios/SonTingMTP.mp3") {
+                                    audioPlayer.play(
+                                        AssetSource(widget.message.text!));
+                                  } else {
+                                    final filePath = widget.message.text;
+                                    final file = File(filePath!);
+                                    print("Get path: ${file.path}");
+                                    final fileExtension =
+                                        path.extension(filePath);
+                                    print("Dinh dang:   $fileExtension");
+                                    audioPlayer
+                                        .play(DeviceFileSource(file.path));
+                                  }
+                                  setState(() {
+                                    isPlaying = true;
+                                  });
+                                }
+                              },
+                              icon: Icon(
+                                isPlaying ? Icons.pause : Icons.play_arrow,
+                                color: widget.message.isSender!
+                                    ? Colors.amberAccent
+                                    : Colors.red,
+                              ),
+                            ),
+                          ),
+                          // ),
+
+                          Flexible(
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: Slider(
+                                value: position.inSeconds.toDouble(),
+                                onChanged: (value) async {
+                                  final position =
+                                      Duration(seconds: value.toInt());
+                                  await audioPlayer.seek(position);
+
+                                  //if audio was paused
+                                  await audioPlayer.resume();
+                                },
+                                min: 0,
+                                max: duration.inSeconds.toDouble(),
+                              ),
+                            ),
+                          ),
+
+                          Text(
+                            formatTime((duration - position).inSeconds),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (widget.message.isSender!) ...{
+                    const SizedBox(
+                      width: 15,
+                    ),
+                    SharedIcon(size: size)
+                  }
+                ],
               ),
             ),
-          ),
-          // ),
-
-          Flexible(
-            child: SizedBox(
-              width: double.infinity,
-              child: Slider(
-                value: position.inSeconds.toDouble(),
-                onChanged: (value) async {
-                  final position = Duration(seconds: value.toInt());
-                  await audioPlayer.seek(position);
-
-                  //if audio was paused
-                  await audioPlayer.resume();
-                },
-                min: 0,
-                max: duration.inSeconds.toDouble(),
-              ),
-            ),
-          ),
-
-          Text(
-            formatTime((duration - position).inSeconds),
-            style: const TextStyle(fontSize: 12),
-          )
-        ],
-      ),
+          ]),
     );
   }
 }
