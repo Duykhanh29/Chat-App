@@ -10,12 +10,19 @@ import 'package:chat_app/data/models/message_data.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:path/path.dart' as path;
+import 'package:chat_app/utils/helpers/validators.dart';
+import 'package:chat_app/modules/messeger/views/widgets/components/share_icon.dart';
+import 'package:chat_app/modules/messeger/views/widgets/components/reply_msg.dart';
 
 class AudioMessage extends StatefulWidget {
-  AudioMessage({super.key, required this.message, required this.user});
+  AudioMessage(
+      {super.key,
+      required this.message,
+      required this.currentUser,
+      required this.idMessageData});
   Message message;
-  User user;
-
+  User currentUser;
+  String idMessageData;
   @override
   State<AudioMessage> createState() => _AudioMessageState();
 }
@@ -72,13 +79,6 @@ class _AudioMessageState extends State<AudioMessage> {
     });
   }
 
-  String formatTime(int seconds) {
-    // return '${(Duration(seconds: seconds))}'.split('.')[0].padLeft(8, '0');   // result is to return 00:00:00
-
-    return '${(Duration(seconds: seconds)).toString().split(':').sublist(1).join(':')}' // result is to return 00:00
-        .split('.')[0];
-  }
-
   @override
   void dispose() {
     print("dispose() is called");
@@ -99,7 +99,9 @@ class _AudioMessageState extends State<AudioMessage> {
     Message? replyMessage;
     if (widget.message.isRepy) {
       replyMessage = controller.findMessageFromIdAndUser(
-          widget.message.idReplyText!, widget.message.replyToUser!);
+          widget.message.idReplyText!,
+          widget.message.replyToUser!,
+          widget.idMessageData);
       print(
           "New Value at id ${widget.message.idMessage}: ID: ${replyMessage.idMessage} text: ${replyMessage.text} type: ${replyMessage.chatMessageType}");
     }
@@ -113,16 +115,17 @@ class _AudioMessageState extends State<AudioMessage> {
       //  padding: const EdgeInsets.only(right: 10),
       height: size,
       child: Column(
-          mainAxisAlignment: widget.message.isSender!
+          mainAxisAlignment: widget.message.sender!.id != widget.currentUser.id
               ? MainAxisAlignment.start
               : MainAxisAlignment.end,
-          crossAxisAlignment: widget.message.isSender!
+          crossAxisAlignment: widget.message.sender!.id != widget.currentUser.id
               ? CrossAxisAlignment.start
               : CrossAxisAlignment.end,
           children: [
             if (widget.message.isRepy) ...{
               //if (widget.message.isSender!) ...{
               BuildReplyMessage(
+                  currentUser: widget.currentUser,
                   replyMessage: replyMessage!,
                   replyUser: widget.message.replyToUser!)
               // } else ...{
@@ -131,11 +134,12 @@ class _AudioMessageState extends State<AudioMessage> {
             },
             Flexible(
               child: Row(
-                mainAxisAlignment: widget.message.isSender!
-                    ? MainAxisAlignment.start
-                    : MainAxisAlignment.end,
+                mainAxisAlignment:
+                    widget.message.sender!.id != widget.currentUser.id
+                        ? MainAxisAlignment.start
+                        : MainAxisAlignment.end,
                 children: [
-                  if (!widget.message.isSender!) ...{
+                  if (widget.message.sender!.id == widget.currentUser.id) ...{
                     SharedIcon(size: size),
                     const SizedBox(
                       width: 15,
@@ -154,17 +158,18 @@ class _AudioMessageState extends State<AudioMessage> {
                       height: 40,
                       decoration: BoxDecoration(
                         color: const Color.fromARGB(255, 192, 253, 168),
-                        borderRadius: widget.message.isSender!
-                            ? const BorderRadius.only(
-                                topLeft: Radius.circular(30),
-                                topRight: Radius.circular(30),
-                                bottomRight: Radius.circular(30),
-                              )
-                            : const BorderRadius.only(
-                                topLeft: Radius.circular(30),
-                                topRight: Radius.circular(30),
-                                bottomLeft: Radius.circular(30),
-                              ),
+                        borderRadius:
+                            widget.message.sender != widget.currentUser
+                                ? const BorderRadius.only(
+                                    topLeft: Radius.circular(30),
+                                    topRight: Radius.circular(30),
+                                    bottomRight: Radius.circular(30),
+                                  )
+                                : const BorderRadius.only(
+                                    topLeft: Radius.circular(30),
+                                    topRight: Radius.circular(30),
+                                    bottomLeft: Radius.circular(30),
+                                  ),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -204,9 +209,10 @@ class _AudioMessageState extends State<AudioMessage> {
                               },
                               icon: Icon(
                                 isPlaying ? Icons.pause : Icons.play_arrow,
-                                color: widget.message.isSender!
-                                    ? Colors.amberAccent
-                                    : Colors.red,
+                                color:
+                                    widget.message.sender != widget.currentUser
+                                        ? Colors.amberAccent
+                                        : Colors.red,
                               ),
                             ),
                           ),
@@ -232,14 +238,15 @@ class _AudioMessageState extends State<AudioMessage> {
                           ),
 
                           Text(
-                            formatTime((duration - position).inSeconds),
+                            Validators.formatTime(
+                                (duration - position).inSeconds),
                             style: const TextStyle(fontSize: 12),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  if (widget.message.isSender!) ...{
+                  if (widget.message.sender!.id != widget.currentUser.id) ...{
                     const SizedBox(
                       width: 15,
                     ),

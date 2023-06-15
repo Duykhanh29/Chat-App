@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:chat_app/data/models/message_data.dart';
 import 'package:chat_app/data/models/user.dart';
+import 'package:chat_app/modules/auth/controllers/auth_controller.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/framework.dart';
@@ -62,7 +63,9 @@ class _CallPageState extends State<CallPage> {
   Widget build(BuildContext context) {
     final controller = Get.find<MessageController>();
     MessageData messageData = Get.arguments;
-    User user = messageData.user!;
+    final authController = Get.find<AuthController>();
+    User? receiver =
+        controller.userGetUserFromIDBYGetX(messageData.receivers!.last);
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -79,7 +82,7 @@ class _CallPageState extends State<CallPage> {
             ),
             Center(
               child: Text(
-                user.name!,
+                receiver!.name == null ? "User" : receiver.name!,
                 style: const TextStyle(
                     fontSize: 30,
                     fontStyle: FontStyle.italic,
@@ -94,7 +97,10 @@ class _CallPageState extends State<CallPage> {
               radius: 100,
               child: CircleAvatar(
                 radius: 90,
-                backgroundImage: NetworkImage(user.urlImage!),
+                backgroundImage: receiver.urlImage == null
+                    ? const NetworkImage(
+                        "https://t4.ftcdn.net/jpg/03/59/58/91/360_F_359589186_JDLl8dIWoBNf1iqEkHxhUeeOulx0wOC5.jpg")
+                    : NetworkImage(receiver.urlImage!),
               ),
             ),
             const SizedBox(
@@ -259,11 +265,13 @@ class _CallPageState extends State<CallPage> {
             InkWell(
               onTap: () {
                 MessageStatus messageStatus;
-                if (messageData.user!.userStatus == UserStatus.ONLINE) {
+                User? user = controller
+                    .userGetUserFromIDBYGetX(messageData.receivers!.last);
+                if (user!.userStatus == UserStatus.ONLINE) {
                   messageStatus = MessageStatus.RECEIVED;
-                } else if (messageData.user!.userStatus == UserStatus.OFFLINE) {
+                } else if (user.userStatus == UserStatus.OFFLINE) {
                   messageStatus = MessageStatus.SENT;
-                } else if (messageData.user!.userStatus == UserStatus.PRIVACY) {
+                } else if (user.userStatus == UserStatus.PRIVACY) {
                   messageStatus = MessageStatus.SENDING;
                 } else {
                   messageStatus = MessageStatus.SEEN;
@@ -275,9 +283,9 @@ class _CallPageState extends State<CallPage> {
                     isSeen: false,
                     messageStatus: messageStatus,
                     dateTime: DateTime.now(),
-                    isSender: false,
+                    sender: authController.currentUser.value,
                     longTime: timeCounter);
-                controller.sentAMessage(message, messageData.user!);
+                controller.sentAMessage(message, messageData);
 
                 Get.back();
               },

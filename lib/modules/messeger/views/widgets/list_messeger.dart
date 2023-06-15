@@ -13,8 +13,8 @@ class ListMesseger extends GetView<MessageController> {
 
   @override
   Widget build(BuildContext context) {
-    final accountController = Get.find<MessageController>();
-    List<MessageData> listMessageData = accountController.listMessageData.value;
+    final controller = Get.find<MessageController>();
+    List<MessageData> listMessageData = controller.listMessageData.value;
     return Flexible(
       child: Container(
         width: MediaQuery.of(context).size.width,
@@ -25,35 +25,35 @@ class ListMesseger extends GetView<MessageController> {
         ),
         child: Obx(
           () {
-            int size = accountController.searchListMessageData.length;
+            print("OBX 1");
+            int size = controller.searchListMessageData.length;
             List<User> listUser = [];
-            return accountController
-                    .getListMessageData(accountController.searchListMessageData)
+            return controller
+                    .getListMessageData(controller.searchListMessageData)
                     .isEmpty
                 ? ListView.separated(
                     itemBuilder: (context, index) {
                       return AUserOnline(
-                          user: accountController.searchListUser[index]);
+                          receiver: controller.searchListUser[index]);
                     },
                     separatorBuilder: (context, index) => const Divider(
                           color: Colors.black26,
                           height: 2,
                         ),
-                    itemCount: accountController.searchListUser.length)
+                    itemCount: controller.searchListUser.length)
                 : ListView.separated(
                     itemBuilder: (context, index) {
                       return AChat(
-                        messageData: accountController.getListMessageData(
-                            accountController.searchListMessageData)[index],
+                        messageData: controller.getListMessageData(
+                            controller.searchListMessageData)[index],
                       );
                     },
                     separatorBuilder: (context, index) => const Divider(
                           color: Colors.black26,
                           height: 2,
                         ),
-                    itemCount: accountController
-                        .getListMessageData(
-                            accountController.searchListMessageData)
+                    itemCount: controller
+                        .getListMessageData(controller.searchListMessageData)
                         .length);
           },
         ),
