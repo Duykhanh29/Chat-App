@@ -1,5 +1,6 @@
 import 'package:chat_app/data/models/message_data.dart';
 import 'package:chat_app/data/models/user.dart';
+import 'package:chat_app/modules/auth/controllers/auth_controller.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
 import 'package:chat_app/modules/messeger/views/widgets/message_tiles/call_message.dart';
 import 'package:flutter/material.dart';
@@ -19,21 +20,46 @@ import 'package:intl/intl.dart';
 import 'package:swipe_to/swipe_to.dart';
 
 class MessageTile extends GetView<MessageController> {
-  MessageTile({super.key, required this.message, required this.user});
+  MessageTile(
+      {super.key,
+      required this.message,
+      required this.currentUser,
+      required this.idMessageData});
   Message message;
-  User user;
+  String idMessageData; // to identify which MessageData it bolong to
+  User currentUser;
   final focusNode = FocusNode();
   Widget messageContain(Message message) {
     if (message.chatMessageType == ChatMessageType.AUDIO) {
-      return AudioMessage(message: message, user: user);
+      return AudioMessage(
+          message: message,
+          currentUser: currentUser,
+          idMessageData: idMessageData);
     } else if (message.chatMessageType == ChatMessageType.VIDEO) {
-      return VideoMessage(message: message, user: user);
+      return VideoMessage(
+          message: message,
+          currentUser: currentUser,
+          idMessageData: idMessageData);
     } else if (message.chatMessageType == ChatMessageType.IMAGE) {
-      return ImageMessage(message: message, user: user);
+      return ImageMessage(
+          message: message,
+          currentUser: currentUser,
+          idMessageData: idMessageData);
     } else if (message.chatMessageType == ChatMessageType.TEXT) {
-      return TextMessage(message: message, user: user);
+      return TextMessage(
+          message: message,
+          currentUser: currentUser,
+          idMessageData: idMessageData);
+    } else if (message.chatMessageType == ChatMessageType.FILE) {
+      return TextMessage(
+          message: message,
+          currentUser: currentUser,
+          idMessageData: idMessageData);
     } else {
-      return CallMessage(message: message, user: user);
+      return CallMessage(
+          message: message,
+          currentUser: currentUser,
+          idMessageData: idMessageData);
     }
   }
 
@@ -109,7 +135,10 @@ class MessageTile extends GetView<MessageController> {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<MessageController>();
+    final authController = Get.find<AuthController>();
+    final currentUser = authController.currentUser.value;
     return SwipeTo(
+      onLeftSwipe: () {},
       onRightSwipe: () {
         if (!message.isDeleted) {
           // if (!message.isSender!) {
@@ -121,8 +150,8 @@ class MessageTile extends GetView<MessageController> {
           // } else {
           print('Test 2');
           print(
-              'Id: ${message.idMessage} and text: ${message.text} and type: ${message.chatMessageType} isSender: ${message.isSender}');
-          controller.changeReplyMessage(message, user);
+              'Id: ${message.idMessage} and text: ${message.text} and type: ${message.chatMessageType} sender: ${message.sender!.id}');
+          controller.changeReplyMessage(message);
           controller.changeisReply();
           //  }
         }
@@ -130,11 +159,11 @@ class MessageTile extends GetView<MessageController> {
       child: Container(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisAlignment: message.isSender!
+          mainAxisAlignment: message.sender!.id != currentUser!.id
               ? MainAxisAlignment.start
               : MainAxisAlignment.end,
           children: [
-            if (message.isSender!) ...[
+            if (message.sender!.id != currentUser.id) ...[
               InkWell(
                 onTap: () {
                   // see profile
@@ -142,7 +171,7 @@ class MessageTile extends GetView<MessageController> {
                 },
                 child: CircleAvatar(
                   backgroundImage: NetworkImage(
-                    user.urlImage!,
+                    message.sender!.urlImage!,
                   ),
                 ),
               ),
@@ -173,7 +202,7 @@ class MessageTile extends GetView<MessageController> {
                 ),
               ),
             ),
-            if (!message.isSender!)
+            if (message.sender!.id == currentUser.id)
               Center(
                   child:
                       MessageStatusDot(messageStatus: message.messageStatus!)),
@@ -267,258 +296,6 @@ class DeletedForYou extends StatelessWidget {
       child: Center(
         child: Text(""),
       ),
-    );
-  }
-}
-
-class SharedIcon extends StatelessWidget {
-  SharedIcon({super.key, required this.size});
-  double size;
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: size,
-      child: Center(
-        child: InkWell(
-          splashColor: Colors.red,
-          highlightColor: Colors.cyan,
-          onTap: () {},
-          child: Container(
-            width: 30,
-            height: 30,
-            decoration:
-                const BoxDecoration(shape: BoxShape.circle, color: Colors.grey),
-            child: const Center(
-              child: Icon(
-                Icons.share_rounded,
-                color: Colors.blue,
-                size: 20,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class BuildReplyMessage extends StatelessWidget {
-  const BuildReplyMessage(
-      {super.key, this.replyUser, required this.replyMessage});
-  final User? replyUser;
-  final Message replyMessage;
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.55, maxHeight: 90),
-      height: 80,
-      padding: EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.2),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(12),
-          topRight: Radius.circular(24),
-        ),
-      ),
-      child: ReplyMessageWidget(
-        replyMessage: replyMessage,
-        replyUser: replyUser!,
-      ),
-    );
-  }
-}
-
-class ReplyMessageWidget extends StatelessWidget {
-  const ReplyMessageWidget(
-      {super.key, this.replyUser, required this.replyMessage});
-  final User? replyUser;
-  final Message replyMessage;
-  Widget getReplyMessage(Message message) {
-    if (message.chatMessageType == ChatMessageType.AUDIO) {
-      return const Text("Audio", style: TextStyle(color: Colors.black54));
-    } else if (message.chatMessageType == ChatMessageType.VIDEO) {
-      return const Text("Video", style: TextStyle(color: Colors.black54));
-    } else if (message.chatMessageType == ChatMessageType.VIDEOCALL ||
-        message.chatMessageType == ChatMessageType.CALL) {
-      return const Text("Call", style: TextStyle(color: Colors.black54));
-    } else if (message.chatMessageType == ChatMessageType.IMAGE) {
-      return Container(
-        height: 35,
-        child: Image.network(
-          message.text!,
-          fit: BoxFit.fill,
-        ),
-      );
-    } else {
-      //if (message.isRepy) {
-      return Text("message.text",
-          style: const TextStyle(
-              color: Colors.black54, overflow: TextOverflow.ellipsis));
-      // }
-      // return Text(message.text!,
-      //     style: const TextStyle(color: Colors.black54),
-      //     overflow: TextOverflow.ellipsis);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = Get.find<MessageController>();
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          //  height: MediaQuery.of(context).size.height * 0.8,
-          color: Colors.green,
-          width: 4,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              const SizedBox(
-                height: 8,
-              ),
-              Container(
-                height: 30,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (replyMessage.isSender!) ...{
-                      Expanded(
-                        child: Text(
-                          replyUser!.name!,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    },
-
-                    // IconButton(
-                    //     onPressed: () {
-                    //       controller.changeisReply();
-                    //       controller.resetReplyMessage();
-                    //     },
-                    //     icon: const Icon(Icons.close, size: 16))
-                  ],
-                ),
-              ),
-              const SizedBox(height: 2),
-              getReplyMessage(replyMessage),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class BuildReplyMessageInput extends StatelessWidget {
-  const BuildReplyMessageInput({super.key, required this.message, this.user});
-  final Message message;
-  final User? user;
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.9, maxHeight: 75),
-      height: 80,
-      padding: EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.2),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(12),
-          topRight: Radius.circular(24),
-        ),
-      ),
-      child: ReplyMessageWidgetInput(
-        message: message,
-        user: user!,
-      ),
-    );
-  }
-}
-
-class ReplyMessageWidgetInput extends StatelessWidget {
-  const ReplyMessageWidgetInput({super.key, required this.message, this.user});
-  final Message message;
-  final User? user;
-  Widget getReplyMessage(Message message) {
-    if (message.chatMessageType == ChatMessageType.AUDIO) {
-      return const Text("Audio", style: TextStyle(color: Colors.black54));
-    } else if (message.chatMessageType == ChatMessageType.VIDEO) {
-      return const Text("Video", style: TextStyle(color: Colors.black54));
-    } else if (message.chatMessageType == ChatMessageType.VIDEOCALL ||
-        message.chatMessageType == ChatMessageType.CALL) {
-      return const Text("Call", style: TextStyle(color: Colors.black54));
-    } else if (message.chatMessageType == ChatMessageType.IMAGE) {
-      return Container(
-        height: 40,
-        child: Image.network(
-          message.text!,
-          fit: BoxFit.fill,
-        ),
-      );
-    } else {
-      return Text(message.text!,
-          style: const TextStyle(color: Colors.black54),
-          overflow: TextOverflow.ellipsis);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = Get.find<MessageController>();
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          //  height: MediaQuery.of(context).size.height * 0.8,
-          color: Colors.green,
-          width: 4,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              const SizedBox(
-                height: 8,
-              ),
-              Container(
-                height: 30,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (message.isSender!) ...{
-                      Expanded(
-                        child: Text(
-                          user!.name!,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    },
-                    // if (!message.isRepy) ...{
-                    IconButton(
-                        onPressed: () {
-                          controller.changeisReply();
-                          controller.resetReplyMessage();
-                        },
-                        icon: const Icon(Icons.close, size: 16))
-                    // }
-                  ],
-                ),
-              ),
-              const SizedBox(height: 2),
-              getReplyMessage(message),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

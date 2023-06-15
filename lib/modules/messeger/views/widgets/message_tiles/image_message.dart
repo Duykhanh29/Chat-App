@@ -6,18 +6,28 @@ import 'package:chat_app/data/models/message_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:chat_app/service/storage_service.dart';
+import 'package:chat_app/modules/messeger/views/widgets/components/share_icon.dart';
+import 'package:chat_app/modules/messeger/views/widgets/components/reply_msg.dart';
 
 class ImageMessage extends StatelessWidget {
-  ImageMessage({super.key, required this.message, required this.user});
+  ImageMessage(
+      {super.key,
+      required this.message,
+      required this.currentUser,
+      required this.idMessageData});
   Message message;
-  User user;
+  User currentUser;
+  String idMessageData;
+  Storage storage = Storage();
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<MessageController>();
     Message? replyMessage;
     if (message.isRepy) {
       replyMessage = controller.findMessageFromIdAndUser(
-          message.idReplyText!, message.replyToUser!);
+          message.idReplyText!, message.replyToUser!, idMessageData);
       print(
           "New Value at ${message.idMessage}: ID: ${replyMessage.idMessage} text: ${replyMessage.text} type: ${replyMessage.chatMessageType}");
     }
@@ -27,22 +37,25 @@ class ImageMessage extends StatelessWidget {
           ? MediaQuery.of(context).size.width * 0.6
           : MediaQuery.of(context).size.width * 0.35,
       child: Column(
-        mainAxisAlignment:
-            message.isSender! ? MainAxisAlignment.start : MainAxisAlignment.end,
-        crossAxisAlignment: message.isSender!
+        mainAxisAlignment: message.sender!.id != currentUser.id
+            ? MainAxisAlignment.start
+            : MainAxisAlignment.end,
+        crossAxisAlignment: message.sender!.id != currentUser.id
             ? CrossAxisAlignment.start
             : CrossAxisAlignment.end,
         children: [
           if (message.isRepy) ...{
             BuildReplyMessage(
-                replyMessage: replyMessage!, replyUser: message.replyToUser!)
+                currentUser: currentUser,
+                replyMessage: replyMessage!,
+                replyUser: message.replyToUser!)
           },
           Row(
-            mainAxisAlignment: message.isSender!
+            mainAxisAlignment: message.sender!.id != currentUser.id
                 ? MainAxisAlignment.start
                 : MainAxisAlignment.end,
             children: [
-              if (!message.isSender!) ...{
+              if (message.sender!.id == currentUser.id) ...{
                 SharedIcon(size: MediaQuery.of(context).size.width * 0.35),
                 const SizedBox(
                   width: 15,
@@ -50,7 +63,7 @@ class ImageMessage extends StatelessWidget {
               },
               GestureDetector(
                 onLongPress: () {
-                  if (!message.isSender!) {
+                  if (message.sender!.id == currentUser.id) {
                     controller.changeIsChoose();
                     controller.toggleDeleteID(message.idMessage!);
                   }
@@ -65,8 +78,9 @@ class ImageMessage extends StatelessWidget {
                           appBar: AppBar(
                             actions: [
                               IconButton(
-                                  onPressed: () {
-                                    print("Download photo");
+                                  onPressed: () async {
+                                    await storage.downloadFileToLocalDevice(
+                                        message.text!, idMessageData, "image");
                                   },
                                   icon: const Icon(Icons.download_outlined))
                             ],
@@ -92,7 +106,7 @@ class ImageMessage extends StatelessWidget {
                   ),
                 ),
               ),
-              if (message.isSender!) ...{
+              if (message.sender!.id != currentUser.id) ...{
                 const SizedBox(
                   width: 15,
                 ),

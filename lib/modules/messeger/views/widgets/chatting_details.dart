@@ -50,7 +50,9 @@ class ChattingDetails extends GetView<MessageController> {
   Widget build(BuildContext context) {
     final controller = Get.find<MessageController>();
     MessageData messageData = Get.arguments;
-    User user = messageData.user!;
+    // User sender = messageData.sender!;
+    User? receiver =
+        controller.userGetUserFromIDBYGetX(messageData.receivers!.last);
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
@@ -85,12 +87,12 @@ class ChattingDetails extends GetView<MessageController> {
                 children: [
                   CircleAvatar(
                     radius: 60,
-                    backgroundColor: user.userStatus == UserStatus.ONLINE
+                    backgroundColor: receiver!.userStatus == UserStatus.ONLINE
                         ? Colors.blue
                         : Colors.grey,
                     child: CircleAvatar(
                       radius: 53,
-                      backgroundImage: NetworkImage(user.urlImage!),
+                      backgroundImage: NetworkImage(receiver.urlImage!),
                     ),
                   ),
                   // user.userStatus == UserStatus.ONLINE
@@ -112,7 +114,7 @@ class ChattingDetails extends GetView<MessageController> {
                 height: 5,
               ),
               Text(
-                user.name!,
+                receiver.name!,
                 style:
                     const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
               ),
@@ -220,7 +222,7 @@ class ChattingDetails extends GetView<MessageController> {
                         color: Color.fromARGB(255, 42, 42, 42),
                       ),
                       ListTile(
-                        title: Text("Create Group with ${user.name}"),
+                        title: Text("Create Group with ${receiver.name}"),
                         onTap: () {},
                         leading: const Icon(
                           Icons.group_add_outlined,

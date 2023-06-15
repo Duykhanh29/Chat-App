@@ -1,5 +1,6 @@
 import 'package:chat_app/data/models/message_data.dart';
 import 'package:chat_app/data/models/user.dart';
+import 'package:chat_app/modules/auth/controllers/auth_controller.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
 import 'package:get/get.dart';
 
@@ -8,6 +9,7 @@ import './widgets/user_online.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
+import 'package:chat_app/modules/profile/views/drawer.dart';
 
 class MessageView extends GetView<MessageController> {
   MessageView({super.key});
@@ -15,12 +17,26 @@ class MessageView extends GetView<MessageController> {
 
   @override
   Widget build(BuildContext context) {
+    Get.put(MessageController());
     final controller = Get.find<MessageController>();
     var listUser = controller.listUser;
     var listMessageData = controller.listMessageData.value;
+    final authController = Get.find<AuthController>();
+    User currentUser = authController.currentUser.value!;
     return Scaffold(
+      drawer: MyDrawer(),
       appBar: AppBar(
         title: const Text("Welcome back"),
+        actions: [
+          IconButton(
+              onPressed: () {
+                currentUser.showALlAttribute();
+              },
+              icon: const Icon(
+                Icons.person_add_alt_1_rounded,
+                color: Colors.blue,
+              ))
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.only(top: 10, left: 5, right: 5),
@@ -61,8 +77,8 @@ class MessageView extends GetView<MessageController> {
                               onPressed: () {
                                 print("add story");
                                 for (var data in controller.listMessageData) {
-                                  print(
-                                      "Numbers of chatting with user: ${data.user!.name} and id: ${data.user!.id} and size: ${data.listMessages!.length}");
+                                  // print(
+                                  //     "Numbers of chatting with user: ${data.se!.name} and id: ${data.user!.id} and size: ${data.listMessages!.length}");
                                 }
                               },
                               icon: const Icon(
@@ -82,26 +98,30 @@ class MessageView extends GetView<MessageController> {
                     width: 8,
                   ),
                   Expanded(
-                    child: ListView.separated(
-                        separatorBuilder: (context, index) => const SizedBox(
-                              width: 3,
-                            ),
-                        scrollDirection: Axis.horizontal,
-                        itemBuilder: (context, index) {
-                          User user = listUser[index];
+                    child: Obx(() {
+                      print("Render");
+                      List<User> list = controller.listUser.value;
+                      return ListView.separated(
+                          separatorBuilder: (context, index) => const SizedBox(
+                                width: 3,
+                              ),
+                          scrollDirection: Axis.horizontal,
+                          itemBuilder: (context, index) {
+                            User user = list[index];
 
-                          return UserOnline(
-                            user: user,
-                            //   messageData: messageData,
-                          );
-                        },
-                        itemCount: listUser.length),
+                            return UserOnline(
+                              receiver: user,
+                              //   messageData: messageData,
+                            );
+                          },
+                          itemCount: list.length);
+                    }),
                   ),
                 ],
               ),
             ),
             const SizedBox(
-              height: 15,
+              height: 10,
             ),
             const ListMesseger(),
           ],

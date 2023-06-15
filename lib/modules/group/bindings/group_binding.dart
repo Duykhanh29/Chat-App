@@ -4,6 +4,9 @@ import 'package:get/get.dart';
 class GroupBinding extends Bindings {
   @override
   void dependencies() {
-    Get.put(() => GroupController());
+    //   Get.put(() => GroupController());
+    Get.lazyPut<GroupController>(
+      () => GroupController(),
+    );
   }
 }

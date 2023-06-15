@@ -6,61 +6,63 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
-
+import 'package:chat_app/utils/helpers/validators.dart';
 import 'package:chat_app/data/models/message_data.dart';
+import 'package:chat_app/modules/messeger/views/widgets/components/share_icon.dart';
+import 'package:chat_app/modules/messeger/views/widgets/components/reply_msg.dart';
 
 class VideoMessage extends StatelessWidget {
-  VideoMessage({super.key, required this.message, required this.user});
+  VideoMessage(
+      {super.key,
+      required this.message,
+      required this.currentUser,
+      required this.idMessageData});
   Message message;
-  User user;
-  bool isYoutubeUrl(String url) {
-    // Regular expression to match YouTube video URLs
-
-    RegExp youtubeUrlPattern = RegExp(
-        r'^https?:\/\/(www\.)?youtube\.com\/watch\?v=[\w-]{11}.*|^https?:\/\/(www\.)?youtu\.be\/[\w-]{11}.*');
-
-    // Test the input URL against the regular expression
-
-    return youtubeUrlPattern.hasMatch(url);
-  }
+  User currentUser;
+  String idMessageData;
 
   double size = 130;
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<MessageController>();
-    Message? replyMessage;
+    Message?
+        replyMessage; // this is a reply message to show in the main message
     if (message.isRepy) {
       replyMessage = controller.findMessageFromIdAndUser(
-          message.idReplyText!, message.replyToUser!);
+          message.idReplyText!, message.replyToUser!, idMessageData);
       print(
           "New Value at ${message.idMessage}: ID: ${replyMessage.idMessage} text: ${replyMessage.text} type: ${replyMessage.chatMessageType}");
     }
     if (message.isRepy) {
-      size = 210;
+      size = 260;
     } else {
-      size = 130;
+      size = 180;
     }
+    print("seiz: l$size");
     return Container(
-      width: MediaQuery.of(context).size.width * 0.75,
+      width: MediaQuery.of(context).size.width * 0.8,
       height: size,
       child: Column(
-        mainAxisAlignment:
-            message.isSender! ? MainAxisAlignment.start : MainAxisAlignment.end,
-        crossAxisAlignment: message.isSender!
+        mainAxisAlignment: message.sender!.id != currentUser.id
+            ? MainAxisAlignment.start
+            : MainAxisAlignment.end,
+        crossAxisAlignment: message.sender!.id != currentUser.id
             ? CrossAxisAlignment.start
             : CrossAxisAlignment.end,
         children: [
           if (message.isRepy) ...{
             BuildReplyMessage(
-                replyMessage: replyMessage!, replyUser: message.replyToUser!)
+                currentUser: currentUser,
+                replyMessage: replyMessage!,
+                replyUser: message.replyToUser!)
           },
           Flexible(
             child: Row(
-              mainAxisAlignment: message.isSender!
+              mainAxisAlignment: message.sender!.id != currentUser.id
                   ? MainAxisAlignment.start
                   : MainAxisAlignment.end,
               children: [
-                if (!message.isSender!) ...{
+                if (message.sender!.id == currentUser.id) ...{
                   SharedIcon(size: size),
                   const SizedBox(
                     width: 15,
@@ -74,16 +76,16 @@ class VideoMessage extends StatelessWidget {
                     // }
                   },
                   child: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.6,
-                    height: 130,
-                    child: isYoutubeUrl(message.text!) == true
+                    width: MediaQuery.of(context).size.width * 0.65,
+                    height: 150,
+                    child: Validators.isYoutubeUrl(message.text!) == true
                         ? YoutubeVideo(message: message)
                         : VideoPlay(
                             message: message,
                           ),
                   ),
                 ),
-                if (message.isSender!) ...{
+                if (message.sender!.id != currentUser.id) ...{
                   const SizedBox(
                     width: 15,
                   ),
@@ -118,7 +120,7 @@ class _VideoPlayState extends State<VideoPlay> {
     // _initializeVideoPlayerFuture = controller.initialize();
     // super.initState();
     //  String file = await rootBundle.loadString('assets/videos/video.mp4');
-    controller = VideoPlayerController.asset(videoAssets)
+    controller = VideoPlayerController.network(widget.message.text!)
       ..addListener(() => setState(() {
             position = controller.value.position;
           }))
@@ -156,11 +158,12 @@ class _VideoPlayState extends State<VideoPlay> {
     return controller != null && controller.value.isInitialized
         ? Container(
             alignment: Alignment.topCenter,
+            color: Colors.yellow,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 AspectRatio(
-                  aspectRatio: controller.value.aspectRatio,
+                  aspectRatio: 1.7,
                   child: VideoPlayer(controller),
                 ),
                 Positioned.fill(
@@ -197,8 +200,8 @@ class _VideoPlayState extends State<VideoPlay> {
         : Container(
             decoration: BoxDecoration(
                 border: Border.all(color: Colors.indigo, width: 1)),
-            width: MediaQuery.of(context).size.width * 0.6,
-            height: 200,
+            width: MediaQuery.of(context).size.width * 0.65,
+            height: 180,
             child: const Center(child: CircularProgressIndicator()),
           );
   }

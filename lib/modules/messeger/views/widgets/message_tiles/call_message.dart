@@ -7,9 +7,14 @@ import 'package:flutter/src/widgets/placeholder.dart';
 import 'package:get/get.dart';
 
 class CallMessage extends StatelessWidget {
-  CallMessage({super.key, required this.message, required this.user});
+  CallMessage(
+      {super.key,
+      required this.message,
+      required this.currentUser,
+      required this.idMessageData});
   Message message;
-  User user;
+  User currentUser;
+  String idMessageData;
   Text getTypeofCall(Message message) {
     if (message.chatMessageType == ChatMessageType.CALL) {
       return const Text(
@@ -28,17 +33,17 @@ class CallMessage extends StatelessWidget {
     final controller = Get.find<MessageController>();
     return GestureDetector(
       onLongPress: () {
-        if (!message.isSender!) {
+        if (message.sender!.id == currentUser.id) {
           controller.changeIsChoose();
           controller.toggleDeleteID(message.idMessage!);
         }
       },
       child: Container(
         decoration: BoxDecoration(
-            color: const Color.fromARGB(255, 76, 89, 90),
-            borderRadius: BorderRadius.circular(30)),
+            color: Color.fromARGB(255, 102, 113, 114),
+            borderRadius: BorderRadius.circular(23)),
         width: MediaQuery.of(context).size.width * 0.45,
-        height: 70,
+        height: 60,
         padding: const EdgeInsets.all(15),
         child: FittedBox(
           child: Row(
