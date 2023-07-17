@@ -10,7 +10,7 @@ abstract class _Paths {
   static const PROFILE = '/profile';
   static const MAINVIEW = '/mainview';
   static const MESSAGE = '/message';
-  static const GROUP = '/group';
+  static const FRIENDS = '/friends';
   static const AUTH = '/auth';
   static const HOME = '/home';
 }

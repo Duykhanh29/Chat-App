@@ -4,10 +4,12 @@ import 'package:chat_app/data/models/message_data.dart';
 import 'package:chat_app/data/models/user.dart';
 import 'package:chat_app/modules/auth/controllers/auth_controller.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 class CallPage extends StatefulWidget {
   CallPage({super.key});
@@ -276,16 +278,16 @@ class _CallPageState extends State<CallPage> {
                 } else {
                   messageStatus = MessageStatus.SEEN;
                 }
-                int size = messageData.listMessages!.length + 1;
+                // int size = messageData.listMessages!.length + 1;
                 Message message = Message(
-                    idMessage: "ID0${size}",
+                    // idMessage: "ID0${size}",
                     chatMessageType: ChatMessageType.CALL,
                     isSeen: false,
                     messageStatus: messageStatus,
-                    dateTime: DateTime.now(),
-                    sender: authController.currentUser.value,
+                    dateTime: Timestamp.now(),
+                    senderID: authController.currentUser.value!.id,
                     longTime: timeCounter);
-                controller.sentAMessage(message, messageData);
+                controller.sendAMessage(message, messageData);
 
                 Get.back();
               },

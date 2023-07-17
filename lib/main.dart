@@ -5,6 +5,7 @@ import 'package:chat_app/modules/home/views/main_view.dart';
 import 'package:chat_app/modules/messeger/bindings/message_binding.dart';
 import 'package:chat_app/modules/widgets/splash.dart';
 import 'package:chat_app/routes/app_page.dart';
+import 'package:chat_app/utils/constants/constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -16,6 +17,9 @@ void main() async {
   await Firebase.initializeApp();
   //.then((value) => Get.put(AuthController()));
   // Get.put(AuthController());
+  Get.lazyPut(
+    () => AuthController(),
+  );
   runApp(
     const MyApp(),
   );
@@ -47,7 +51,7 @@ class Home extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetBuilder<AuthController>(
       builder: (controller) {
-        if (controller.currentUser.value != null) {
+        if (firebaseAuth.currentUser != null) {
           return MainView();
         } else {
           return const StartPage();
@@ -57,5 +61,22 @@ class Home extends StatelessWidget {
 
       //home: SplashScreen(),
     );
+    // Get.put(AuthController());
+    // final auController = Get.find<AuthController>();
+    // return StreamBuilder(
+    //   builder: (context, snapshot) {
+    //     if (snapshot.connectionState == ConnectionState.none) {
+    //     } else if (snapshot.connectionState == ConnectionState.waiting) {
+    //       Center(
+    //         child: CircularProgressIndicator(),
+    //       );
+    //     } else {
+    //       if(snapshot.data!=null){
+
+    //       }
+    //     }
+    //   },
+    //   stream: FirebaseAuth.instance.authStateChanges(),
+    // );
   }
 }

@@ -52,6 +52,14 @@ class ReplyMessageWidgetInput extends StatelessWidget {
           fit: BoxFit.fill,
         ),
       );
+    } else if (message.chatMessageType == ChatMessageType.EMOJI) {
+      return const Text("EMOJI", style: TextStyle(color: Colors.black54));
+    } else if (message.chatMessageType == ChatMessageType.GIF) {
+      return const Text("GIF", style: TextStyle(color: Colors.black54));
+    } else if (message.chatMessageType == ChatMessageType.FILE) {
+      return const Text("FILE", style: TextStyle(color: Colors.black54));
+    } else if (message.chatMessageType == ChatMessageType.LOCATION) {
+      return const Text("LOCATION", style: TextStyle(color: Colors.black54));
     } else {
       return Text(message.text!,
           style: const TextStyle(color: Colors.black54),
@@ -84,14 +92,14 @@ class ReplyMessageWidgetInput extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    if (message.sender != currentUser) ...{
-                      Expanded(
-                        child: Text(
-                          user!.name!,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                    Expanded(
+                      child: Text(
+                        message.senderID != currentUser!.id
+                            ? user!.name!
+                            : currentUser!.name!,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                    },
+                    ),
                     // if (!message.isRepy) ...{
                     IconButton(
                         onPressed: () {

@@ -8,6 +8,7 @@ import 'package:video_player/video_player.dart';
 import 'package:chat_app/data/models/user.dart';
 import 'package:chat_app/data/models/message_data.dart';
 import 'package:chat_app/modules/messeger/views/widgets/chatting_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class VideoViewPage extends StatefulWidget {
   VideoViewPage(
@@ -122,19 +123,21 @@ class _VideoViewPageState extends State<VideoViewPage> {
                                 await storage.uploadFile(
                                     widget.path,
                                     widget.fileName,
-                                    widget.messageData.idMessageData!);
+                                    widget.messageData.idMessageData!,
+                                    'videos');
                                 String url = await storage.downloadURL(
                                     widget.fileName,
-                                    widget.messageData.idMessageData!);
+                                    widget.messageData.idMessageData!,
+                                    'videos');
                                 Message message = Message(
                                     text: url,
                                     chatMessageType: ChatMessageType.VIDEO,
                                     isSeen: false,
                                     messageStatus: widget.messageStatus,
-                                    dateTime: DateTime.now(),
-                                    sender: widget.sender);
+                                    dateTime: Timestamp.now(),
+                                    senderID: widget.sender!.id);
                                 message.showALlAttribute();
-                                controller.sentAMessage(
+                                controller.sendAMessage(
                                     message, widget.messageData);
                                 Get.back();
                                 Get.back();

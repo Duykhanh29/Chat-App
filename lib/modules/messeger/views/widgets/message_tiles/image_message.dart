@@ -25,37 +25,37 @@ class ImageMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<MessageController>();
     Message? replyMessage;
-    if (message.isRepy) {
+    if (message.isReply) {
       replyMessage = controller.findMessageFromIdAndUser(
-          message.idReplyText!, message.replyToUser!, idMessageData);
+          message.idReplyText!, message.replyToUserID!, idMessageData);
       print(
           "New Value at ${message.idMessage}: ID: ${replyMessage.idMessage} text: ${replyMessage.text} type: ${replyMessage.chatMessageType}");
     }
     return Container(
       width: MediaQuery.of(context).size.width * 0.75,
-      height: message.isRepy
+      height: message.isReply
           ? MediaQuery.of(context).size.width * 0.6
           : MediaQuery.of(context).size.width * 0.35,
       child: Column(
-        mainAxisAlignment: message.sender!.id != currentUser.id
+        mainAxisAlignment: message.senderID != currentUser.id
             ? MainAxisAlignment.start
             : MainAxisAlignment.end,
-        crossAxisAlignment: message.sender!.id != currentUser.id
+        crossAxisAlignment: message.senderID != currentUser.id
             ? CrossAxisAlignment.start
             : CrossAxisAlignment.end,
         children: [
-          if (message.isRepy) ...{
+          if (message.isReply) ...{
             BuildReplyMessage(
                 currentUser: currentUser,
                 replyMessage: replyMessage!,
-                replyUser: message.replyToUser!)
+                replyUserID: message.replyToUserID)
           },
           Row(
-            mainAxisAlignment: message.sender!.id != currentUser.id
+            mainAxisAlignment: message.senderID != currentUser.id
                 ? MainAxisAlignment.start
                 : MainAxisAlignment.end,
             children: [
-              if (message.sender!.id == currentUser.id) ...{
+              if (message.senderID == currentUser.id) ...{
                 SharedIcon(size: MediaQuery.of(context).size.width * 0.35),
                 const SizedBox(
                   width: 15,
@@ -63,7 +63,7 @@ class ImageMessage extends StatelessWidget {
               },
               GestureDetector(
                 onLongPress: () {
-                  if (message.sender!.id == currentUser.id) {
+                  if (message.senderID == currentUser.id) {
                     controller.changeIsChoose();
                     controller.toggleDeleteID(message.idMessage!);
                   }
@@ -80,7 +80,7 @@ class ImageMessage extends StatelessWidget {
                               IconButton(
                                   onPressed: () async {
                                     await storage.downloadFileToLocalDevice(
-                                        message.text!, idMessageData, "image");
+                                        message.text!, "image");
                                   },
                                   icon: const Icon(Icons.download_outlined))
                             ],
@@ -106,7 +106,7 @@ class ImageMessage extends StatelessWidget {
                   ),
                 ),
               ),
-              if (message.sender!.id != currentUser.id) ...{
+              if (message.senderID != currentUser.id) ...{
                 const SizedBox(
                   width: 15,
                 ),

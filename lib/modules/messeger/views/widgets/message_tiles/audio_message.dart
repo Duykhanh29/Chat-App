@@ -97,15 +97,15 @@ class _AudioMessageState extends State<AudioMessage> {
   Widget build(BuildContext context) {
     final controller = Get.find<MessageController>();
     Message? replyMessage;
-    if (widget.message.isRepy) {
+    if (widget.message.isReply) {
       replyMessage = controller.findMessageFromIdAndUser(
           widget.message.idReplyText!,
-          widget.message.replyToUser!,
+          widget.message.replyToUserID!,
           widget.idMessageData);
       print(
           "New Value at id ${widget.message.idMessage}: ID: ${replyMessage.idMessage} text: ${replyMessage.text} type: ${replyMessage.chatMessageType}");
     }
-    if (widget.message.isRepy) {
+    if (widget.message.isReply) {
       size = 120;
     } else {
       size = 40;
@@ -115,19 +115,19 @@ class _AudioMessageState extends State<AudioMessage> {
       //  padding: const EdgeInsets.only(right: 10),
       height: size,
       child: Column(
-          mainAxisAlignment: widget.message.sender!.id != widget.currentUser.id
+          mainAxisAlignment: widget.message.senderID != widget.currentUser.id
               ? MainAxisAlignment.start
               : MainAxisAlignment.end,
-          crossAxisAlignment: widget.message.sender!.id != widget.currentUser.id
+          crossAxisAlignment: widget.message.senderID != widget.currentUser.id
               ? CrossAxisAlignment.start
               : CrossAxisAlignment.end,
           children: [
-            if (widget.message.isRepy) ...{
+            if (widget.message.isReply) ...{
               //if (widget.message.isSender!) ...{
               BuildReplyMessage(
                   currentUser: widget.currentUser,
                   replyMessage: replyMessage!,
-                  replyUser: widget.message.replyToUser!)
+                  replyUserID: widget.message.replyToUserID!)
               // } else ...{
               //   BuildReplyMessage(message: widget.message)
               // }
@@ -135,11 +135,11 @@ class _AudioMessageState extends State<AudioMessage> {
             Flexible(
               child: Row(
                 mainAxisAlignment:
-                    widget.message.sender!.id != widget.currentUser.id
+                    widget.message.senderID != widget.currentUser.id
                         ? MainAxisAlignment.start
                         : MainAxisAlignment.end,
                 children: [
-                  if (widget.message.sender!.id == widget.currentUser.id) ...{
+                  if (widget.message.senderID == widget.currentUser.id) ...{
                     SharedIcon(size: size),
                     const SizedBox(
                       width: 15,
@@ -159,7 +159,7 @@ class _AudioMessageState extends State<AudioMessage> {
                       decoration: BoxDecoration(
                         color: const Color.fromARGB(255, 192, 253, 168),
                         borderRadius:
-                            widget.message.sender != widget.currentUser
+                            widget.message.senderID != widget.currentUser.id
                                 ? const BorderRadius.only(
                                     topLeft: Radius.circular(30),
                                     topRight: Radius.circular(30),
@@ -209,10 +209,10 @@ class _AudioMessageState extends State<AudioMessage> {
                               },
                               icon: Icon(
                                 isPlaying ? Icons.pause : Icons.play_arrow,
-                                color:
-                                    widget.message.sender != widget.currentUser
-                                        ? Colors.amberAccent
-                                        : Colors.red,
+                                color: widget.message.senderID !=
+                                        widget.currentUser.id
+                                    ? Colors.amberAccent
+                                    : Colors.red,
                               ),
                             ),
                           ),
@@ -246,7 +246,7 @@ class _AudioMessageState extends State<AudioMessage> {
                       ),
                     ),
                   ),
-                  if (widget.message.sender!.id != widget.currentUser.id) ...{
+                  if (widget.message.senderID != widget.currentUser.id) ...{
                     const SizedBox(
                       width: 15,
                     ),

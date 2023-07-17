@@ -1,3 +1,4 @@
+import 'package:chat_app/modules/messeger/views/widgets/components/view_media_file_link.dart';
 import 'package:chat_app/modules/profile/views/widgets/settings_widgets/chat_settings.dart';
 import 'package:chat_app/modules/profile/views/widgets/settings_widgets/help_centre.dart';
 import 'package:chat_app/modules/profile/views/widgets/settings_widgets/language.dart';
@@ -175,7 +176,9 @@ class SettingsPage extends StatelessWidget {
                       child: const Icon(Icons.help, color: Colors.blue)),
                   title: const Text("Helps centre"),
                   trailing: IconButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Get.to(() => ViewMediaLink());
+                      },
                       icon: const Icon(Icons.navigate_next_sharp)),
                 ),
               ),

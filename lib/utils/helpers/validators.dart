@@ -1,3 +1,5 @@
+import 'package:chat_app/data/models/message_data.dart';
+
 class Validators {
   Validators._();
 
@@ -58,5 +60,16 @@ class Validators {
       return true;
     }
     return false;
+  }
+
+  static bool isSVG(String link) {
+    if (link.contains(".svg")) {
+      return true;
+    }
+    return false;
+  }
+
+  static int differenceHours(Message message) {
+    return DateTime.now().difference(message.dateTime!.toDate()).inHours;
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:chat_app/modules/auth/controllers/auth_controller.dart';
+import 'package:chat_app/modules/friend/controllers/friend_controller.dart';
 import 'package:chat_app/modules/messeger/views/widgets/components/camera.dart';
 import 'package:chat_app/service/storage_service.dart';
 import 'package:clipboard/clipboard.dart';
@@ -10,6 +11,7 @@ import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
 import 'package:chat_app/modules/messeger/views/widgets/chatting_details.dart';
 import 'package:chat_app/modules/messeger/views/widgets/message_tile.dart';
 import 'package:chat_app/modules/messeger/views/widgets/call_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -27,6 +29,7 @@ import './components/choose_options.dart';
 import './components/recorder.dart';
 import './components/reply_msg_input.dart';
 import './components/cam.dart';
+import 'package:geolocator/geolocator.dart';
 
 class ChattingPage extends GetView<MessageController> {
   var messageController = TextEditingController();
@@ -34,7 +37,7 @@ class ChattingPage extends GetView<MessageController> {
   //MessageData? messageData;
   final scrollController = ScrollController();
   Storage storage = Storage();
-  String userStatus(UserStatus userStatus) {
+  String userStatus(UserStatus? userStatus) {
     if (userStatus == UserStatus.ONLINE) {
       return "Online";
     } else if (userStatus == UserStatus.OFFLINE) {
@@ -56,10 +59,10 @@ class ChattingPage extends GetView<MessageController> {
             chatMessageType: ChatMessageType.IMAGE,
             isSeen: false,
             messageStatus: messageStatus,
-            dateTime: DateTime.now(),
-            sender: currentUser);
+            dateTime: Timestamp.now(),
+            senderID: currentUser!.id);
         message.showALlAttribute();
-        controller.sentAMessage(message, messageData);
+        controller.sendAMessage(message, messageData);
       } catch (e) {
         print("error is: $e");
       }
@@ -78,10 +81,10 @@ class ChattingPage extends GetView<MessageController> {
           chatMessageType: ChatMessageType.VIDEO,
           isSeen: false,
           messageStatus: messageStatus,
-          dateTime: DateTime.now(),
-          sender: currentUser);
+          dateTime: Timestamp.now(),
+          senderID: currentUser!.id);
       message.showALlAttribute();
-      controller.sentAMessage(message, messageData);
+      controller.sendAMessage(message, messageData);
     }
   }
 
@@ -126,56 +129,10 @@ class ChattingPage extends GetView<MessageController> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final controller = Get.find<MessageController>();
-    final authController = Get.find<AuthController>();
-    MessageData? messageData = Get.arguments;
-    List<Message>? list = getListMessages(messageData);
-    print("SHow all attributes: \n");
-    messageData!.showALlAttribute();
-    User? receiver;
-    User? currentUser = authController.currentUser.value!;
-    List<User>? receivers = CommonMethods.getAllUserInChat(
-        messageData.receivers!, controller.listAllUser.value, currentUser);
-    if (CommonMethods.isAGroup(messageData.receivers) == false) {
-      receiver = CommonMethods.getReceiver(receivers, currentUser);
-    }
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        leading: IconButton(
-            onPressed: () {
-              Get.back();
-
-              // to find a receiver
-              var data = controller.listMessageData.firstWhere((data) =>
-                  data.receivers!.last == messageData.receivers!.last);
-              final messageList = data.listMessages!.reversed.toList();
-              if (messageList.isEmpty) {
-                controller.deleteAChat(messageData);
-              }
-              if (controller.isSearch.value) {
-                controller.cancelSearch();
-                controller.stopSearch(
-                    controller.searchController.text, messageData);
-              }
-              if (controller.isRecorder.value) {
-                controller.changeRecorder();
-              }
-              if (controller.isMore.value) {
-                controller.changeIsMore();
-              }
-            },
-            icon: const Icon(Icons.arrow_back_ios)),
-        title: Obx(() => controller.isSearch.value
-            ? displaySearch(controller, messageData)
-            : TitleWidget(
-                controller: controller,
-                messageData: messageData,
-                receiver: receiver,
-                userStatus: userStatus(receiver!.userStatus!))),
-        actions: [
+  List<Widget> actions(
+          MessageData messageData, List<User>? receivers, User currentUser) =>
+      <Widget>[
+        if (CommonMethods.isAGroup(messageData.receivers)) ...{
           FittedBox(
             child: IconButton(
               onPressed: () {
@@ -218,52 +175,230 @@ class ChattingPage extends GetView<MessageController> {
                   size: 22,
                 )),
           )
-        ],
-      ),
-      body: Obx(() {
-        var data = controller.listMessageData.firstWhere(
-            (data) => data.idMessageData == messageData.idMessageData);
-        final messageList = data.listMessages!.reversed.toList();
-        return Column(
-          mainAxisAlignment: messageList.isEmpty
-              ? MainAxisAlignment.end
-              : MainAxisAlignment.start,
-          children: <Widget>[
-            messageList.isEmpty
-                ? NewConversation(
-                    messageData: messageData,
-                    currentUser: currentUser,
-                    controller: controller,
-                    receivers: receivers)
-                : OldConversation(
-                    messageData: messageData,
-                    receiver: receivers.last,
-                    currentUser: currentUser,
-                    controller: controller),
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Obx(() => controller.isChoosen.value
-                  ? ChooseOptions(
-                      messageData: messageData,
-                      message: controller.findMessageFromID(
-                          controller.deletedID.value, messageData)!,
+        } else ...{
+          Obx(
+            () {
+              final friendController = Get.find<FriendController>();
+              List<User> listFriends = friendController.listFriends;
+
+              User? receiver =
+                  CommonMethods.getReceiver(receivers, currentUser);
+              return CommonMethods.isFriend(receiver!.id!, listFriends) == true
+                  ? FittedBox(
+                      child: IconButton(
+                        onPressed: () {
+                          Get.to(() => CallPage(), arguments: messageData);
+                        },
+                        icon: CommonMethods.isOnlineChat(
+                                    receivers, currentUser) ==
+                                true
+                            ? const Icon(
+                                Icons.local_phone_outlined,
+                                color: Colors.orange,
+                                size: 22,
+                              )
+                            : const Icon(
+                                Icons.local_phone,
+                                size: 22,
+                              ),
+                      ),
                     )
-                  : Inputer(
-                      authController: authController,
-                      controller: controller,
-                      currentUser: currentUser,
-                      messageController: messageController,
-                      messageData: messageData,
-                      receiver: receiver,
-                      receivers: receivers,
-                      storage: storage)),
-            ),
-            const SizedBox(
-              height: 10,
-            )
-          ],
-        );
-      }),
+                  :
+                  // FittedBox(
+                  //     child:
+                  Container();
+              //);
+              // const FittedBox(
+              //     child: Visibility(
+              //       visible: false,
+              //       child: Icon(Icons.local_phone_outlined),
+              //     ),
+              //   );
+            },
+          ),
+          Obx(() {
+            final friendController = Get.find<FriendController>();
+            List<User> listFriends = friendController.listFriends;
+
+            User? receiver = CommonMethods.getReceiver(receivers, currentUser);
+            return CommonMethods.isFriend(receiver!.id!, listFriends) == true
+                ? FittedBox(
+                    child: IconButton(
+                      onPressed: () async {
+                        await downloadAllImages(
+                            messageData, receivers, currentUser);
+                      },
+                      icon:
+                          CommonMethods.isOnlineChat(receivers, currentUser) ==
+                                  true
+                              ? const Icon(
+                                  Icons.videocam_outlined,
+                                  size: 22,
+                                  color: Colors.orange,
+                                )
+                              : const Icon(
+                                  Icons.videocam,
+                                  size: 22,
+                                ),
+                    ),
+                  )
+                : Container();
+            // FittedBox(
+            //     child: Container(),
+            //   );
+          }),
+          FittedBox(
+            child: IconButton(
+                onPressed: () {},
+                icon: const Icon(
+                  Icons.more_horiz_rounded,
+                  size: 22,
+                )),
+          )
+        },
+      ];
+  @override
+  Widget build(BuildContext context) {
+    Get.put(MessageController());
+    Get.put(AuthController());
+    Get.put(FriendController());
+    final controller = Get.find<MessageController>();
+    final authController = Get.find<AuthController>();
+    final friendController = Get.find<FriendController>();
+    MessageData? messageData = Get.arguments;
+    // List<Message>? list = getListMessages(messageData);
+    print("SHow all attributes: \n");
+    messageData!.showALlAttribute();
+    User? receiver;
+    User? currentUser = authController.currentUser.value!;
+    List<User>? receivers = CommonMethods.getAllUserInChat(
+        messageData.receivers!, controller.listAllUser.value);
+    if (CommonMethods.isAGroup(messageData.receivers) == false) {
+      receiver = CommonMethods.getReceiver(receivers, currentUser);
+    }
+    final msgData = FirebaseFirestore.instance
+        .collection('messageDatas')
+        .doc(messageData.idMessageData);
+    List<User> friends = friendController.listFriends;
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      appBar: AppBar(
+        leading: IconButton(
+            onPressed: () {
+              Get.back();
+
+              // to find a receiver
+              var data = controller.listMessageData.firstWhere((data) =>
+                  data.receivers!.last == messageData.receivers!.last);
+              final messageList = data.listMessages!.reversed.toList();
+              if (messageList.isEmpty) {
+                controller.deleteAChat(messageData);
+              }
+              if (controller.isSearch.value) {
+                controller.cancelSearch();
+                controller.stopSearch(
+                    controller.searchController.text, messageData);
+              }
+              if (controller.isRecorder.value) {
+                controller.changeRecorder();
+              }
+              if (controller.isMore.value) {
+                controller.changeIsMore();
+              }
+            },
+            icon: const Icon(Icons.arrow_back_ios)),
+        title: Obx(() => controller.isSearch.value
+            ? displaySearch(controller, messageData)
+            : TitleWidget(
+                friends: friends,
+                controller: controller,
+                messageData: messageData,
+                receiver: receiver,
+                userStatus:
+                    receiver == null ? null : userStatus(receiver.userStatus))),
+        actions: actions(messageData, receivers, currentUser),
+      ),
+      body: Obx(
+        () {
+          var data = controller.listMessageData.firstWhere(
+              (data) => data.idMessageData == messageData.idMessageData);
+          final messageList = data.listMessages!.reversed.toList();
+          return Column(
+            mainAxisAlignment: messageList.isEmpty
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start,
+            children: <Widget>[
+              // Expanded(
+              //   child:
+
+              StreamBuilder(
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    //  final messageDt = snapshot.data!;
+                    // if (snapshot.data != null) {
+                    MessageData currentMsgData = MessageData(
+                      idMessageData: snapshot.data!.idMessageData,
+                      chatName: snapshot.data!.chatName,
+                      groupImage: snapshot.data!.groupImage,
+                      listMessages: (snapshot.data!.listMessages),
+                      // .toList(),
+                      receivers: List<String>.from(snapshot.data!.receivers!),
+                    );
+
+                    final messages = currentMsgData.listMessages;
+                    if (CommonMethods.isAGroup(currentMsgData.receivers) &&
+                        (currentMsgData.listMessages!.isEmpty)) {
+                      return NewConversation(
+                          messageData: messageData,
+                          currentUser: currentUser,
+                          controller: controller,
+                          receivers: receivers,
+                          friends: friends);
+                    }
+                    return OldConversation(
+                        messageData: currentMsgData,
+                        //        receivers: receivers,
+                        currentUser: currentUser,
+                        controller: controller);
+                    // }
+                  } else {
+                    return NewConversation(
+                        messageData: messageData,
+                        currentUser: currentUser,
+                        controller: controller,
+                        receivers: receivers,
+                        friends: friends);
+                    // return const Center(child: CircularProgressIndicator());
+                  }
+                },
+                stream: controller.getMesgData(messageData),
+              ),
+              // ),
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Obx(() => controller.isChoosen.value
+                    ? ChooseOptions(
+                        messageData: messageData,
+                        message: controller.findMessageFromID(
+                            controller.deletedID.value, messageData)!,
+                      )
+                    : Inputer(
+                        authController: authController,
+                        controller: controller,
+                        currentUser: currentUser,
+                        messageController: messageController,
+                        messageData: messageData,
+                        receiver: receiver,
+                        receivers: receivers,
+                        storage: storage)),
+              ),
+              const SizedBox(
+                height: 10,
+              )
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -272,73 +407,89 @@ class OldConversation extends StatelessWidget {
   const OldConversation({
     super.key,
     required this.messageData,
-    required this.receiver,
+    // required this.receiver,
     required this.currentUser,
     required this.controller,
   });
   final MessageData? messageData;
-  final User? receiver;
+  //final User? receiver;
   final User? currentUser;
   final MessageController controller;
   @override
   Widget build(BuildContext context) {
+    final messageList = messageData!.listMessages!.reversed.toList();
+    print("Show all attributes of all messages in a chat\n");
+    for (var element in messageList) {
+      element.showALlAttribute();
+    }
     return Expanded(
-      child: Container(
-        color: const Color.fromARGB(255, 245, 226, 187),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Obx(() {
-            var list = controller.listMessageData.value;
-            var data = list.firstWhere(
-                (data) => data.idMessageData == messageData!.idMessageData);
-            final messageList = data.listMessages!.reversed.toList();
-            return GroupedListView<Message, DateTime>(
-              order: GroupedListOrder.DESC,
-              elements: messageList,
-              groupBy: (message) {
-                return DateTime(
-                  message.dateTime!.year,
-                  message.dateTime!.month,
-                  message.dateTime!.day,
-                );
-              },
-              physics: const BouncingScrollPhysics(),
-              reverse: true,
-              floatingHeader: true,
-              shrinkWrap: true,
-              useStickyGroupSeparators: true,
-              itemComparator: (message1, message2) =>
-                  message1.dateTime!.compareTo(message2.dateTime!),
-              groupHeaderBuilder: (message) => SizedBox(
-                height: 30,
-                child: Center(
-                  child: Card(
-                    color: Colors.blueGrey,
-                    child: Padding(
-                      padding: const EdgeInsets.all(5),
-                      child: Validators.compareDate(message.dateTime!)
-                          ? const Text(
-                              "Today",
-                              style: TextStyle(fontSize: 12),
-                            )
-                          : Text(
-                              DateFormat.EEEE().format(message.dateTime!),
-                              style: const TextStyle(fontSize: 12),
-                            ),
+      child: Theme(
+        data: Theme.of(context).copyWith(
+            scrollbarTheme: ScrollbarThemeData(
+                thumbColor:
+                    MaterialStateProperty.all<Color>(Colors.blueAccent))),
+        child: Scrollbar(
+          child: Container(
+            color: const Color.fromARGB(255, 245, 226, 187),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child:
+                  //Obx(() {
+                  // var list = controller.listMessageData.value;
+                  // var data = list.firstWhere(
+                  //     (data) => data.idMessageData == messageData!.idMessageData);
+
+                  //return
+                  GroupedListView<Message, DateTime>(
+                order: GroupedListOrder.DESC,
+                elements: messageList,
+                groupBy: (message) {
+                  return DateTime(
+                      message.dateTime!.toDate().year,
+                      message.dateTime!.toDate().month,
+                      message.dateTime!.toDate().day,
+                      message.dateTime!.toDate().hour);
+                },
+                physics: const BouncingScrollPhysics(),
+                reverse: true,
+                floatingHeader: true,
+                shrinkWrap: true,
+                useStickyGroupSeparators: true,
+                itemComparator: (message1, message2) =>
+                    message1.dateTime!.compareTo(message2.dateTime!),
+                groupHeaderBuilder: (message) => SizedBox(
+                  height: 30,
+                  child: Center(
+                    child: Card(
+                      color: Colors.blueGrey,
+                      child: Padding(
+                        padding: const EdgeInsets.all(5),
+                        child:
+                            Validators.compareDate(message.dateTime!.toDate())
+                                ? const Text(
+                                    "Today",
+                                    style: TextStyle(fontSize: 12),
+                                  )
+                                : Text(
+                                    DateFormat.EEEE()
+                                        .format(message.dateTime!.toDate()),
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                      ),
                     ),
                   ),
                 ),
+                itemBuilder: (context, message) {
+                  return MessageTile(
+                    idMessageData: messageData!.idMessageData!,
+                    message: message,
+                    currentUser: currentUser!,
+                    key: ValueKey(message.idMessage),
+                  );
+                },
               ),
-              itemBuilder: (context, message) {
-                return MessageTile(
-                  idMessageData: messageData!.idMessageData!,
-                  message: message,
-                  currentUser: currentUser!,
-                  key: ValueKey(message.idMessage),
-                );
-              },
-            );
-          }),
+            ),
+          ),
         ),
       ),
     );
@@ -346,14 +497,14 @@ class OldConversation extends StatelessWidget {
 }
 
 class NewConversation extends StatelessWidget {
-  const NewConversation({
-    super.key,
-    required this.messageData,
-    required this.receivers,
-    required this.currentUser,
-    required this.controller,
-  });
-
+  const NewConversation(
+      {super.key,
+      required this.messageData,
+      required this.receivers,
+      required this.currentUser,
+      required this.controller,
+      required this.friends});
+  final List<User>? friends;
   final MessageData? messageData;
   final List<User>? receivers;
   final User? currentUser;
@@ -365,26 +516,47 @@ class NewConversation extends StatelessWidget {
     if (CommonMethods.isAGroup(messageData!.receivers) == false) {
       receiver = CommonMethods.getReceiver(receivers, currentUser);
     }
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 50,
-            backgroundImage: CommonMethods.isAGroup(messageData!.receivers)
-                ? messageData!.groupImage != null
-                    ? const NetworkImage(
-                        "https://cdn-icons-png.flaticon.com/512/615/615075.png")
-                    : NetworkImage(messageData!.groupImage!)
-                : receiver!.urlImage == null
-                    ? const NetworkImage(
-                        "https://t4.ftcdn.net/jpg/03/59/58/91/360_F_359589186_JDLl8dIWoBNf1iqEkHxhUeeOulx0wOC5.jpg")
-                    : NetworkImage(receiver.urlImage!),
-          ),
-          const SizedBox(
-            height: 50,
-          ),
-          TextButton(
+    return Scrollbar(
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.05,
+            ),
+            CircleAvatar(
+              radius: 50,
+              backgroundImage: CommonMethods.isAGroup(messageData!.receivers)
+                  ? messageData!.groupImage == null
+                      ? const NetworkImage(
+                          "https://cdn-icons-png.flaticon.com/512/615/615075.png")
+                      : NetworkImage(messageData!.groupImage!)
+                  : receiver!.urlImage == null
+                      ? const NetworkImage(
+                          "https://t4.ftcdn.net/jpg/03/59/58/91/360_F_359589186_JDLl8dIWoBNf1iqEkHxhUeeOulx0wOC5.jpg")
+                      : NetworkImage(receiver.urlImage!),
+            ),
+            if (CommonMethods.isAGroup(messageData!.receivers)) ...{
+              const SizedBox(
+                height: 50,
+              ),
+            } else ...{
+              if (!CommonMethods.isFriend(receiver!.id!, friends) &&
+                  receiver != null) ...{
+                const SizedBox(
+                  height: 30,
+                ),
+                const Text("You are not friends"),
+                const SizedBox(
+                  height: 10,
+                ),
+              } else ...{
+                const SizedBox(
+                  height: 50,
+                ),
+              },
+            },
+            TextButton(
               onPressed: () {
                 MessageStatus messageStatus;
                 messageStatus =
@@ -394,23 +566,25 @@ class NewConversation extends StatelessWidget {
                     chatMessageType: ChatMessageType.TEXT,
                     isSeen: false,
                     messageStatus: messageStatus,
-                    dateTime: DateTime.now(),
-                    sender: currentUser);
+                    dateTime: Timestamp.now(),
+                    senderID: currentUser!.id);
                 message.showALlAttribute();
-                controller.sentAMessage(message, messageData!);
+                controller.sendAMessage(message, messageData!);
               },
               child: const Icon(
                 Icons.waving_hand_rounded,
                 color: Colors.blue,
                 size: 60,
-              )),
-          const SizedBox(
-            height: 30,
-          ),
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.35,
-          )
-        ],
+              ),
+            ),
+            const SizedBox(
+              height: 30,
+            ),
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.25,
+            )
+          ],
+        ),
       ),
     );
   }
@@ -454,45 +628,40 @@ class Inputer extends StatelessWidget {
                   if (result != null) {
                     final path = result.files.single.path!;
                     final fileName = result.files.single.name;
-                    storage
-                        .uploadFile(path, fileName, messageData.idMessageData!)
-                        .then((value) => print("Done"));
-
-                    String url = await storage.downloadURL(
-                        fileName, messageData.idMessageData!);
-
-                    MessageStatus messageStatus;
-                    messageStatus =
-                        CommonMethods.getMessageStatus(receivers, currentUser);
-                    late Message message;
+                    String type = '';
+                    ChatMessageType chatMessageType;
                     if (fileName.contains('.mp4')) {
-                      message = Message(
-                          text: url,
-                          chatMessageType: ChatMessageType.VIDEO,
-                          isSeen: false,
-                          messageStatus: messageStatus,
-                          dateTime: DateTime.now(),
-                          sender: currentUser);
+                      type = 'videos';
+                      chatMessageType = ChatMessageType.VIDEO;
                     } else if (fileName.contains('.png') ||
                         fileName.contains('.jpg')) {
+                      type = 'images';
+                      chatMessageType = ChatMessageType.IMAGE;
+                    } else {
+                      type = 'audios';
+                      chatMessageType = ChatMessageType.AUDIO;
+                    }
+                    bool isSuccess = await storage.uploadFile(
+                        path, fileName, messageData.idMessageData!, type);
+                    if (isSuccess) {
+                      String url = await storage.downloadURL(
+                          fileName, messageData.idMessageData!, type);
+                      MessageStatus messageStatus;
+                      messageStatus = CommonMethods.getMessageStatus(
+                          receivers, currentUser);
+                      late Message message;
                       message = Message(
                           text: url,
                           chatMessageType: ChatMessageType.IMAGE,
                           isSeen: false,
                           messageStatus: messageStatus,
-                          dateTime: DateTime.now(),
-                          sender: currentUser);
-                    } else if (fileName.contains('.mp3')) {
-                      message = Message(
-                          text: url,
-                          chatMessageType: ChatMessageType.AUDIO,
-                          isSeen: false,
-                          messageStatus: messageStatus,
-                          dateTime: DateTime.now(),
-                          sender: currentUser);
+                          dateTime: Timestamp.now(),
+                          senderID: currentUser!.id);
+                      message.showALlAttribute();
+                      controller.sendAMessage(message, messageData);
+                    } else {
+                      print("Nothing happend");
                     }
-                    message.showALlAttribute();
-                    controller.sentAMessage(message, messageData);
                   } else {
                     print("Do nothing here");
                   }
@@ -520,6 +689,38 @@ class Inputer extends StatelessWidget {
             ],
           ));
         });
+  }
+
+  var latitude = '';
+  var longitude = '';
+
+  late StreamSubscription<Position> streamSubscription;
+  Future getCurrentLocation() async {
+    bool enabledServices;
+    enabledServices = await Geolocator.isLocationServiceEnabled();
+    if (!enabledServices) {
+      await Geolocator.openLocationSettings();
+      return Future.error("Please allow to open position");
+    }
+    LocationPermission permission = await Geolocator.checkPermission();
+
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        print('Location permissions are denied');
+      } else if (permission == LocationPermission.deniedForever) {
+        print("'Location permissions are permanently denied");
+      } else {
+        print("GPS Location service is granted");
+      }
+    } else {
+      print("GPS Location permission granted.");
+    }
+    Position position = await Geolocator.getCurrentPosition();
+    String latitude = position.latitude.toString();
+    String longitude = position.longitude.toString();
+    controller.changeLongTitudeVsLattitude(
+        newLong: longitude, newLat: latitude);
   }
 
   @override
@@ -614,8 +815,8 @@ class Inputer extends StatelessWidget {
                     chatMessageType: ChatMessageType.AUDIO,
                     isSeen: false,
                     messageStatus: messageStatus,
-                    dateTime: DateTime.now(),
-                    sender: currentUser);
+                    dateTime: Timestamp.now(),
+                    senderID: currentUser!.id);
                 controller.changeRecorder();
                 print("Recorder");
               } else {
@@ -623,15 +824,15 @@ class Inputer extends StatelessWidget {
                     messageController.text != null) {
                   if (controller.isReply.value) {
                     message = Message(
-                        replyToUser: controller.replyToUser,
+                        replyToUserID: controller.replyToUserID,
                         // idMessage: ,
                         text: messageController.text,
                         chatMessageType: ChatMessageType.TEXT,
                         isSeen: false,
                         messageStatus: messageStatus,
-                        dateTime: DateTime.now(),
-                        sender: authController.currentUser.value,
-                        isRepy: true,
+                        dateTime: Timestamp.now(),
+                        senderID: currentUser!.id,
+                        isReply: true,
                         idReplyText: controller.replyMessage!.idMessage);
                     print("Reply");
                     controller.changeisReply();
@@ -642,8 +843,8 @@ class Inputer extends StatelessWidget {
                         chatMessageType: ChatMessageType.TEXT,
                         isSeen: false,
                         messageStatus: messageStatus,
-                        dateTime: DateTime.now(),
-                        sender: currentUser);
+                        dateTime: Timestamp.now(),
+                        senderID: currentUser!.id);
                   }
                 } else {
                   // do nothing
@@ -653,7 +854,7 @@ class Inputer extends StatelessWidget {
               if (isSend) {
                 message.showALlAttribute();
                 print("ID in ms data: ${messageData.idMessageData}");
-                controller.sentAMessage(message, messageData);
+                controller.sendAMessage(message, messageData);
                 messageController.text = "";
               }
             },
@@ -708,7 +909,23 @@ class Inputer extends StatelessWidget {
                     ),
                   ),
                   InkWell(
-                    onTap: () {},
+                    onTap: () async {
+                      await getCurrentLocation();
+
+                      MessageStatus messageStatus;
+                      messageStatus = CommonMethods.getMessageStatus(
+                          receivers, currentUser);
+                      Message message = Message(
+                          text:
+                              "${controller.latitude.value},${controller.longtitude.value}",
+                          chatMessageType: ChatMessageType.LOCATION,
+                          isSeen: false,
+                          messageStatus: messageStatus,
+                          dateTime: Timestamp.now(),
+                          senderID: currentUser!.id);
+                      controller.sendAMessage(message, messageData);
+                      controller.changeIsMore();
+                    },
                     child: Container(
                         height: 55,
                         width: 55,
@@ -741,6 +958,7 @@ class Inputer extends StatelessWidget {
 class TitleWidget extends StatelessWidget {
   TitleWidget(
       {super.key,
+      required this.friends,
       required this.controller,
       required this.messageData,
       required this.receiver,
@@ -748,9 +966,19 @@ class TitleWidget extends StatelessWidget {
   MessageData messageData;
   MessageController controller;
   User? receiver;
-  String userStatus;
+  String? userStatus;
+  List<User>? friends;
   @override
   Widget build(BuildContext context) {
+    double outerRadius = 23;
+    double innerRadius = 20;
+    if (!CommonMethods.isAGroup(messageData.receivers)) {
+      if (CommonMethods.isFriend(receiver!.id!, friends)) {
+        innerRadius = 35;
+        outerRadius = 40;
+      }
+    }
+
     return FittedBox(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -758,10 +986,10 @@ class TitleWidget extends StatelessWidget {
         children: <Widget>[
           InkWell(
             child: CircleAvatar(
-              radius: 30,
+              radius: outerRadius,
               backgroundColor: Colors.red,
               child: CircleAvatar(
-                radius: 27,
+                radius: innerRadius,
                 backgroundImage: CommonMethods.isAGroup(messageData.receivers!)
                     ? (messageData.groupImage == null
                         ? const NetworkImage(
@@ -779,7 +1007,10 @@ class TitleWidget extends StatelessWidget {
               if (controller.isSearch.value) {
                 controller.cancelSearch();
               }
-              Get.to(() => ChattingDetails(), arguments: messageData);
+              // Get.to(() => ChattingDetails(), arguments: messageData);
+              Get.to(() => ChattingDetails(
+                    messageData: messageData,
+                  ));
             },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.start,
@@ -796,14 +1027,21 @@ class TitleWidget extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       CommonMethods.isAGroup(messageData.receivers)
-                          ? (Text(messageData.chatName == null
-                              ? "No Group name"
-                              : messageData.chatName!))
+                          ? (Text(
+                              messageData.chatName == null ||
+                                      messageData.chatName == ""
+                                  ? "No Group name"
+                                  : messageData.chatName!,
+                              style: const TextStyle(fontSize: 25),
+                            ))
                           : (Text(receiver!.name == null
                               ? "No name"
                               : receiver!.name!)),
+                      const SizedBox(
+                        height: 5,
+                      ),
                       Text(
-                        userStatus, //
+                        userStatus ?? "", //
                         style: const TextStyle(fontSize: 13),
                         overflow: TextOverflow.clip,
                       )

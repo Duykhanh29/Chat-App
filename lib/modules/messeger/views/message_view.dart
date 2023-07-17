@@ -1,11 +1,17 @@
+import 'package:chat_app/data/common/menu_items.dart';
+import 'package:chat_app/data/models/menu_item.dart';
 import 'package:chat_app/data/models/message_data.dart';
 import 'package:chat_app/data/models/user.dart';
 import 'package:chat_app/modules/auth/controllers/auth_controller.dart';
+import 'package:chat_app/modules/messeger/controllers/group_controller.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
+import 'package:chat_app/modules/messeger/views/widgets/ingroup/create_group.dart';
+import 'package:chat_app/modules/profile/views/widgets/profile_view.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 
 import './widgets/list_messeger.dart';
-import './widgets/user_online.dart';
+import 'widgets/an_user.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
@@ -14,28 +20,74 @@ import 'package:chat_app/modules/profile/views/drawer.dart';
 class MessageView extends GetView<MessageController> {
   MessageView({super.key});
   var searchController = TextEditingController();
+  PopupMenuItem<MenuItem> buildItem(MenuItem item) => PopupMenuItem(
+        value: item,
+        child: Row(
+          children: [
+            Icon(
+              item.icon,
+              size: 18,
+              color: Colors.orangeAccent,
+            ),
+            const SizedBox(
+              width: 12,
+            ),
+            Text(
+              item.text!,
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+      );
+
+  void onSelected(BuildContext context, MenuItem item) {
+    switch (item) {
+      case MenuItems.addFriend:
+        Get.to(() => ProfileView());
+        break;
+      case MenuItems.createGroup:
+        Get.to(() => CreateGroup());
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    print("devicePixelRatio ${MediaQuery.of(context).devicePixelRatio}");
     Get.put(MessageController());
+    Get.put(GroupController());
+    final groupController = Get.find<GroupController>();
     final controller = Get.find<MessageController>();
-    var listUser = controller.listUser;
+    var listUser = controller.listAllUser;
     var listMessageData = controller.listMessageData.value;
     final authController = Get.find<AuthController>();
-    User currentUser = authController.currentUser.value!;
+    User? currentUser;
+    // if (authController.isLogin.value) {
+    currentUser = authController.currentUser.value!;
+    // }
+    final msgDatas = FirebaseFirestore.instance.collection('messageDatas');
     return Scaffold(
-      drawer: MyDrawer(),
+      drawer: const MyDrawer(),
       appBar: AppBar(
         title: const Text("Welcome back"),
         actions: [
-          IconButton(
-              onPressed: () {
-                currentUser.showALlAttribute();
-              },
-              icon: const Icon(
-                Icons.person_add_alt_1_rounded,
-                color: Colors.blue,
-              ))
+          PopupMenuButton<MenuItem>(
+            onSelected: (value) => onSelected(context, value),
+            itemBuilder: (context) => [
+              ...MenuItems.menuItems.map((e) => buildItem(e)).toList(),
+            ],
+          )
+
+          // IconButton(
+          //     onPressed: () {
+          //       if (currentUser != null) {
+          //         currentUser.showALlAttribute();
+          //       }
+          //     },
+          //     icon: const Icon(
+          //       Icons.more_horiz,
+          //       color: Colors.white,
+          //     ))
         ],
       ),
       body: Padding(
@@ -47,20 +99,82 @@ class MessageView extends GetView<MessageController> {
               padding: const EdgeInsets.only(right: 5, left: 5),
               height: 45,
               child: Center(
-                child: TextField(
-                  onChanged: (value) =>
-                      controller.filterListMessageData(searchController.text),
-                  controller: searchController,
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                    prefixIcon: const Icon(Icons.search),
-                    hintText: "Search for friends",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                ),
-              ),
+                  child: currentUser != null
+                      ? StreamBuilder(
+                          stream: controller
+                              .getListMsgDataOfCurrentUser(currentUser),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              final data = snapshot.data;
+                              List<MessageData> listMsgData = data!;
+
+                              //controller.listMessageData.value = listMsgData;
+                              // Obx(
+                              //   () {
+                              // controller.setListMessageData(listMsgData);
+                              // controller.listMessageData.value = listMsgData;
+                              // controller.searchListMessageData.value =
+                              //     listMsgData;
+                              final list = controller.listMessageData;
+                              return TextField(
+                                onChanged: (value) {
+                                  // controller.updateDisplayedMsgData(value);
+                                  controller.changeSearchKey(value);
+                                },
+                                // controller.filterMsgData(value),
+                                // controller.filterListMessageData(
+                                //     searchController.text, list),
+                                controller: searchController,
+                                decoration: InputDecoration(
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(vertical: 10),
+                                  prefixIcon: const Icon(Icons.search),
+                                  hintText: "Search for friends",
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                ),
+                                // );
+                                // },
+                              );
+                            }
+                            return TextField(
+                              onChanged: (value) {
+                                controller.changeSearchKey(value);
+                              },
+                              // controller.filterListMessageData(
+                              //     searchController.text,
+                              //     controller.listMessageData),
+                              controller: searchController,
+                              decoration: InputDecoration(
+                                contentPadding:
+                                    const EdgeInsets.symmetric(vertical: 10),
+                                prefixIcon: const Icon(Icons.search),
+                                hintText: "Search for friends",
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                              ),
+                            );
+                          },
+                          // child:
+                        )
+                      : TextField(
+                          onChanged: (value) =>
+                              controller.filterListMessageData(
+                                  searchController.text,
+                                  controller.listMessageData),
+                          controller: searchController,
+                          decoration: InputDecoration(
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 10),
+                            prefixIcon: const Icon(Icons.search),
+                            hintText: "Search for friends",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                          ),
+                        )),
             ),
             const SizedBox(
               height: 10,
@@ -71,25 +185,22 @@ class MessageView extends GetView<MessageController> {
                 children: [
                   Column(
                     children: [
-                      CircleAvatar(
+                      Obx(
+                        () => CircleAvatar(
                           radius: 30,
-                          child: IconButton(
-                              onPressed: () {
-                                print("add story");
-                                for (var data in controller.listMessageData) {
-                                  // print(
-                                  //     "Numbers of chatting with user: ${data.se!.name} and id: ${data.user!.id} and size: ${data.listMessages!.length}");
-                                }
-                              },
-                              icon: const Icon(
-                                Icons.add,
-                                size: 25,
-                              ))),
+                          backgroundImage: authController.currentUser.value !=
+                                  null
+                              ? NetworkImage(
+                                  authController.currentUser.value!.urlImage!)
+                              : const NetworkImage(
+                                  "https://st3.depositphotos.com/6672868/13701/v/450/depositphotos_137014128-stock-illustration-user-profile-icon.jpg"),
+                        ),
+                      ),
                       const SizedBox(
                         height: 4,
                       ),
                       const Text(
-                        "Add story",
+                        "Me",
                         style: TextStyle(fontSize: 13),
                       ),
                     ],
@@ -100,19 +211,26 @@ class MessageView extends GetView<MessageController> {
                   Expanded(
                     child: Obx(() {
                       print("Render");
-                      List<User> list = controller.listUser.value;
+                      List<User> list = controller.listAllUser.value;
                       return ListView.separated(
                           separatorBuilder: (context, index) => const SizedBox(
                                 width: 3,
                               ),
                           scrollDirection: Axis.horizontal,
                           itemBuilder: (context, index) {
+                            // list.removeWhere(
+                            //   (element) => element.id == currentUser!.id,
+                            // );
                             User user = list[index];
-
-                            return UserOnline(
-                              receiver: user,
-                              //   messageData: messageData,
-                            );
+                            return user.id != currentUser!.id
+                                ? AnUser(
+                                    receiver: user,
+                                    //   messageData: messageData,
+                                  )
+                                : const SizedBox(
+                                    height: 1,
+                                    width: 1,
+                                  );
                           },
                           itemCount: list.length);
                     }),

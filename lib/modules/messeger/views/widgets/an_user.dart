@@ -9,13 +9,15 @@ import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
 import 'package:get/get.dart';
 
-class UserOnline extends GetView<MessageController> {
+class AnUser extends GetView<MessageController> {
   //UserOnline({super.key, required this.user, required this.messageData});
-  UserOnline({super.key, required this.receiver});
+  AnUser({super.key, required this.receiver});
   User receiver;
 //  MessageData? messageData;
   @override
   Widget build(BuildContext context) {
+    Get.put(MessageController());
+    Get.put(AuthController());
     final authController = Get.find<AuthController>();
     final controller = Get.find<MessageController>();
     User currentUser = authController.currentUser.value!;
@@ -23,7 +25,7 @@ class UserOnline extends GetView<MessageController> {
     receiver.showALlAttribute();
     print("Curernt user print: \n");
     currentUser.showALlAttribute();
-    return Container(
+    return SizedBox(
       width: MediaQuery.of(context).size.width * 0.18,
       //   decoration: BoxDecoration(color: Colors.red),
       child: Column(

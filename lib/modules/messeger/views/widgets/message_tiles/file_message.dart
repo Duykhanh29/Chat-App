@@ -27,13 +27,13 @@ class FileMessage extends StatelessWidget {
     final controller = Get.find<MessageController>();
     Message?
         replyMessage; // this is a reply message to show in the main message
-    if (message.isRepy) {
+    if (message.isReply) {
       replyMessage = controller.findMessageFromIdAndUser(
-          message.idReplyText!, message.replyToUser!, idMessageData);
+          message.idReplyText!, message.replyToUserID!, idMessageData);
       print(
           "New Value at ${message.idMessage}: ID: ${replyMessage.idMessage} text: ${replyMessage.text} type: ${replyMessage.chatMessageType}");
     }
-    if (message.isRepy) {
+    if (message.isReply) {
       size = 165;
     } else {
       size = 85;
@@ -45,11 +45,11 @@ class FileMessage extends StatelessWidget {
       ),
       child: Flexible(
         child: Row(
-          mainAxisAlignment: message.sender!.id != currentUser.id
+          mainAxisAlignment: message.senderID != currentUser.id
               ? MainAxisAlignment.start
               : MainAxisAlignment.end,
           children: [
-            if (message.sender!.id == currentUser.id) ...{
+            if (message.senderID == currentUser.id) ...{
               SharedIcon(size: size),
               const SizedBox(
                 width: 15,
@@ -90,7 +90,7 @@ class FileMessage extends StatelessWidget {
                 ),
               ),
             ),
-            if (message.sender!.id != currentUser.id) ...{
+            if (message.senderID != currentUser.id) ...{
               const SizedBox(
                 width: 15,
               ),

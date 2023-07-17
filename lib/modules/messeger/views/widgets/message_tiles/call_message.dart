@@ -33,7 +33,7 @@ class CallMessage extends StatelessWidget {
     final controller = Get.find<MessageController>();
     return GestureDetector(
       onLongPress: () {
-        if (message.sender!.id == currentUser.id) {
+        if (message.senderID == currentUser.id) {
           controller.changeIsChoose();
           controller.toggleDeleteID(message.idMessage!);
         }
@@ -42,7 +42,7 @@ class CallMessage extends StatelessWidget {
         decoration: BoxDecoration(
             color: Color.fromARGB(255, 102, 113, 114),
             borderRadius: BorderRadius.circular(23)),
-        width: MediaQuery.of(context).size.width * 0.45,
+        width: MediaQuery.of(context).size.width * 0.4,
         height: 60,
         padding: const EdgeInsets.all(15),
         child: FittedBox(

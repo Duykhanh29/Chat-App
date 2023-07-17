@@ -1,8 +1,8 @@
 import 'package:chat_app/main.dart';
 import 'package:chat_app/modules/auth/bindings/auth_binding.dart';
 import 'package:chat_app/modules/auth/views/startPage.dart';
-import 'package:chat_app/modules/group/bindings/group_binding.dart';
-import 'package:chat_app/modules/group/views/group_view.dart';
+import 'package:chat_app/modules/friend/bindings/friend_binding.dart';
+import 'package:chat_app/modules/friend/views/friend_view.dart';
 import 'package:chat_app/modules/home/views/main_view.dart';
 import 'package:chat_app/modules/messeger/views/message_view.dart';
 import 'package:chat_app/modules/profile/bindings/profile_biding.dart';
@@ -27,9 +27,9 @@ class AppPages {
       binding: MessageBinding(),
     ),
     GetPage(
-      name: _Paths.GROUP,
-      page: () => GroupView(),
-      binding: GroupBinding(),
+      name: _Paths.FRIENDS,
+      page: () => FriendView(),
+      binding: FriendBinding(),
     ),
     GetPage(
       name: _Paths.MAINVIEW,

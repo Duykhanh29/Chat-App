@@ -2,19 +2,43 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:gallery_saver/gallery_saver.dart';
+import 'dart:typed_data';
+import 'package:http/http.dart' as http;
+import 'package:fluttertoast/fluttertoast.dart';
 
 class Storage {
   final storage = FirebaseStorage.instance;
-  Future uploadFile(
-      String filePath, String fileName, String idMessageData) async {
+  Future<bool> uploadFile(
+      String filePath, String fileName, String id, String type) async {
     File file = File(filePath);
     try {
-      await storage.ref('images/$idMessageData/$fileName').putFile(file);
+      await storage.ref('$type/$id/$fileName').putFile(file);
+      return true;
     } on FirebaseException catch (e) {
       print(e);
+      return false;
+    }
+  }
+
+  Future<Uint8List> _downloadFile(String fileURL) async {
+    var response = await http.get(Uri.parse(fileURL));
+    return response.bodyBytes;
+  }
+
+  Future uploadFromURL(String fileURL, String id) async {
+    // Tải tệp tin từ URL
+    Uint8List fileData = await _downloadFile(fileURL);
+    try {
+      Reference ref = storage.ref().child('avatars/$id');
+      UploadTask uploadTask = ref.putData(fileData);
+      await uploadTask.whenComplete(() => print('File uploaded successfully'));
+    } catch (e) {
+      print("An error occurred: $e");
     }
   }
 
@@ -29,9 +53,14 @@ class Storage {
     return listItems;
   }
 
-  Future<String> downloadURL(String imageName, String idMessageData) async {
+  Future<String> downloadURL(String fileName, String id, String type) async {
+    print("fileName: $fileName,id: $id, type: $type ");
+    Reference ref = storage.ref('$type/$id');
+    final result = await ref.listAll();
+    int count = result.items.length;
+    print("How many: ${count}");
     String downloadURL =
-        await storage.ref('images/$idMessageData/$imageName').getDownloadURL();
+        await storage.ref('$type/$id/$fileName').getDownloadURL();
     return downloadURL;
   }
 
@@ -48,28 +77,51 @@ class Storage {
     return listItems;
   }
 
-  Future downloadFileToLocalDevice(
-      String imageUrl, String idMessageData, String type) async {
+  Future downloadFileToLocalDevice(String Url, String fileType) async {
     try {
 // Tải xuống và lưu trữ hình ảnh
-      final reference = storage.refFromURL(imageUrl);
+      final reference = storage.refFromURL(Url);
       final url = await reference.getDownloadURL();
       final dir = await getApplicationDocumentsDirectory();
       final path = '${dir.path}/${reference.name}';
       await Dio().download(url, path);
-      if (type == "video") {
-        await GallerySaver.saveVideo(path, toDcim: true);
-      } else if (type == "image") {
-        await GallerySaver.saveImage(path, toDcim: true);
+      if (fileType == "video") {
+        await GallerySaver.saveVideo(path, toDcim: true).whenComplete(
+          () => Get.snackbar("Success", "",
+              snackPosition: SnackPosition.TOP,
+              titleText: const Text("Download successfully"),
+              backgroundColor: Colors.greenAccent),
+        );
+        ;
+      } else if (fileType == "image") {
+        await GallerySaver.saveImage(path, toDcim: true).whenComplete(
+          () => Get.snackbar("Success", "",
+              snackPosition: SnackPosition.TOP,
+              titleText: const Text("Download successfully"),
+              backgroundColor: Colors.greenAccent),
+        );
       }
     } catch (e) {
       print("An error occurred: $e");
     }
   }
 
+  Future<void> downloadAndSaveImage(String imageUrl) async {
+    final response = await http.get(Uri.parse(imageUrl));
+    final documentDirectory = await getApplicationDocumentsDirectory();
+    final file = File('${documentDirectory.path}/image.jpg');
+    await file.writeAsBytes(response.bodyBytes);
+    final galleryPath = await GallerySaver.saveImage(file.path);
+    if (galleryPath != null) {
+      print('Ảnh đã được lưu: $galleryPath');
+    } else {
+      print('Lỗi khi download ảnh');
+    }
+  }
+
+  //pdf
   Future uploadFilePDF(String fileName, String filePath) async {
     try {
-      FirebaseStorage storage = FirebaseStorage.instance;
       Reference ref = storage.ref().child('files/pdf/${fileName}');
       File file = File(filePath);
       UploadTask uploadTask = ref.putFile(file);
@@ -79,6 +131,7 @@ class Storage {
     }
   }
 
+  // pdf
   Future loadPDFFromFirebase(String fileName) async {
     try {
       final refPDF = storage.ref().child('files/pdf/${fileName}');
@@ -89,6 +142,7 @@ class Storage {
     }
   }
 
+  //pdf
   Future storeFile(String fileName, Uint8List? bytes) async {
     final dir = await getApplicationDocumentsDirectory();
 

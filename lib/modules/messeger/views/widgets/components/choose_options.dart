@@ -1,3 +1,4 @@
+import 'package:chat_app/utils/helpers/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:chat_app/data/models/message_data.dart';
@@ -26,8 +27,8 @@ class ChooseOptions extends GetView<MessageController> {
                 const SizedBox(height: 6),
                 const Text('Do you want to delete this message'),
                 const SizedBox(height: 6),
-                if (messageController.differenceHours(message) < 3) ...{
-                  Container(
+                if (Validators.differenceHours(message) < 3) ...{
+                  SizedBox(
                     width: double.infinity,
                     child: TextButton(
                       onPressed: () {
@@ -43,7 +44,7 @@ class ChooseOptions extends GetView<MessageController> {
                   ),
                   const SizedBox(height: 6),
                 },
-                Container(
+                SizedBox(
                   width: double.infinity,
                   child: TextButton(
                     onPressed: () {
@@ -63,7 +64,7 @@ class ChooseOptions extends GetView<MessageController> {
                   height: 1,
                 ),
                 const SizedBox(height: 4),
-                Container(
+                SizedBox(
                   width: double.infinity,
                   child: TextButton(
                     onPressed: () {
@@ -92,25 +93,29 @@ class ChooseOptions extends GetView<MessageController> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             TextButton(
-                onPressed: () {
-                  controller.changeIsChoose();
-                  controller.changeReplyMessage(message);
-                  controller.changeisReply();
-                },
-                child: const Text("Reply")),
+              onPressed: () {
+                controller.changeIsChoose();
+                controller.changeReplyMessage(message);
+                controller.changeisReply();
+              },
+              child: const Text("Reply"),
+            ),
             TextButton(
-                onPressed: () async {
-                  FlutterClipboard.copy(message.text!).then((value) {
+              onPressed: () async {
+                FlutterClipboard.copy(message.text!).then(
+                  (value) {
                     return ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Text Copied'),
                       ),
                     );
-                  });
+                  },
+                );
 
-                  controller.changeIsChoose();
-                },
-                child: const Text("Copy")),
+                controller.changeIsChoose();
+              },
+              child: const Text("Copy"),
+            ),
             TextButton(
                 onPressed: () async {
                   await showSheet(context, controller);
@@ -120,7 +125,7 @@ class ChooseOptions extends GetView<MessageController> {
               TextButton(
                 onPressed: () async {
                   await storage.downloadFileToLocalDevice(
-                      message.text!, messageData.idMessageData!, "video");
+                      message.text!, "video");
                 },
                 child: const Text('Download'),
               ),

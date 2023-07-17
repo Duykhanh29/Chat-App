@@ -27,45 +27,46 @@ class VideoMessage extends StatelessWidget {
     final controller = Get.find<MessageController>();
     Message?
         replyMessage; // this is a reply message to show in the main message
-    if (message.isRepy) {
+    if (message.isReply) {
       replyMessage = controller.findMessageFromIdAndUser(
-          message.idReplyText!, message.replyToUser!, idMessageData);
+          message.idReplyText!, message.replyToUserID!, idMessageData);
       print(
           "New Value at ${message.idMessage}: ID: ${replyMessage.idMessage} text: ${replyMessage.text} type: ${replyMessage.chatMessageType}");
     }
-    if (message.isRepy) {
-      size = 260;
+    if (message.isReply) {
+      size = 220;
     } else {
-      size = 180;
+      size = 140;
     }
     print("seiz: l$size");
     return Container(
-      width: MediaQuery.of(context).size.width * 0.8,
+      width: MediaQuery.of(context).size.width * 0.75,
+      //   decoration: BoxDecoration(color: Colors.red),
       height: size,
       child: Column(
-        mainAxisAlignment: message.sender!.id != currentUser.id
+        mainAxisAlignment: message.senderID != currentUser.id
             ? MainAxisAlignment.start
             : MainAxisAlignment.end,
-        crossAxisAlignment: message.sender!.id != currentUser.id
+        crossAxisAlignment: message.senderID != currentUser.id
             ? CrossAxisAlignment.start
             : CrossAxisAlignment.end,
         children: [
-          if (message.isRepy) ...{
+          if (message.isReply) ...{
             BuildReplyMessage(
                 currentUser: currentUser,
                 replyMessage: replyMessage!,
-                replyUser: message.replyToUser!)
+                replyUserID: message.replyToUserID)
           },
           Flexible(
             child: Row(
-              mainAxisAlignment: message.sender!.id != currentUser.id
+              mainAxisAlignment: message.senderID != currentUser.id
                   ? MainAxisAlignment.start
                   : MainAxisAlignment.end,
               children: [
-                if (message.sender!.id == currentUser.id) ...{
+                if (message.senderID == currentUser.id) ...{
                   SharedIcon(size: size),
                   const SizedBox(
-                    width: 15,
+                    width: 10,
                   ),
                 },
                 GestureDetector(
@@ -76,8 +77,8 @@ class VideoMessage extends StatelessWidget {
                     // }
                   },
                   child: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.65,
-                    height: 150,
+                    width: MediaQuery.of(context).size.width * 0.6,
+                    height: 140,
                     child: Validators.isYoutubeUrl(message.text!) == true
                         ? YoutubeVideo(message: message)
                         : VideoPlay(
@@ -85,9 +86,9 @@ class VideoMessage extends StatelessWidget {
                           ),
                   ),
                 ),
-                if (message.sender!.id != currentUser.id) ...{
+                if (message.senderID != currentUser.id) ...{
                   const SizedBox(
-                    width: 15,
+                    width: 10,
                   ),
                   SharedIcon(size: size)
                 }
@@ -158,12 +159,12 @@ class _VideoPlayState extends State<VideoPlay> {
     return controller != null && controller.value.isInitialized
         ? Container(
             alignment: Alignment.topCenter,
-            color: Colors.yellow,
+            //   color: Colors.yellow,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 AspectRatio(
-                  aspectRatio: 1.7,
+                  aspectRatio: 1.55,
                   child: VideoPlayer(controller),
                 ),
                 Positioned.fill(
@@ -200,8 +201,8 @@ class _VideoPlayState extends State<VideoPlay> {
         : Container(
             decoration: BoxDecoration(
                 border: Border.all(color: Colors.indigo, width: 1)),
-            width: MediaQuery.of(context).size.width * 0.65,
-            height: 180,
+            width: MediaQuery.of(context).size.width * 0.6,
+            height: 160,
             child: const Center(child: CircularProgressIndicator()),
           );
   }

@@ -1,3 +1,4 @@
+import 'package:chat_app/modules/home/controllers/data_controller.dart';
 import 'package:chat_app/modules/home/controllers/home_controller.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
 import 'package:chat_app/modules/messeger/views/message_view.dart';
@@ -15,40 +16,46 @@ class MainView extends GetView<HomeController> {
 
   @override
   Widget build(BuildContext context) {
-    Get.put(HomeController());
+    Get.lazyPut(() => HomeController());
+    Get.lazyPut(() => MessageController());
+    Get.lazyPut(() => DataController());
     final controller = Get.find<HomeController>();
+    final dataController = Get.find<DataController>();
+    final msgController = Get.find<MessageController>();
     // Get.put(MessageController());
     // Get.put(ProfileController());
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      bottomNavigationBar: BottomNavigationBar(
-        iconSize: 25,
-        backgroundColor: Colors.amber,
-        selectedFontSize: 8,
-        onTap: (value) {
-          controller.updatePageIndex(value);
-        },
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-              icon: Icon(
-                Icons.messenger,
-                color: Colors.blue,
-              ),
-              label: "Messeger"),
-          BottomNavigationBarItem(
-              icon: Icon(
-                Icons.group_rounded,
-                color: Colors.blue,
-              ),
-              label: "Group"),
-          BottomNavigationBarItem(
-              icon: Icon(
-                Icons.person_2,
-                color: Colors.blue,
-              ),
-              label: "Profile"),
-        ],
-        currentIndex: controller.currentPageINdex.value,
+      bottomNavigationBar: Obx(
+        () => BottomNavigationBar(
+          iconSize: 25,
+          backgroundColor: const Color.fromARGB(255, 98, 170, 212),
+          selectedFontSize: 8,
+          onTap: (value) {
+            controller.updatePageIndex(value);
+          },
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+                icon: Icon(
+                  Icons.messenger,
+                  color: Colors.white70,
+                ),
+                label: "Messeges"),
+            BottomNavigationBarItem(
+                icon: Icon(
+                  Icons.group_rounded,
+                  color: Colors.white70,
+                ),
+                label: "Friends"),
+            BottomNavigationBarItem(
+                icon: Icon(
+                  Icons.person_2,
+                  color: Colors.white70,
+                ),
+                label: "Profile"),
+          ],
+          currentIndex: controller.currentPageINdex.value,
+        ),
       ),
       body: Obx(
         () => IndexedStack(

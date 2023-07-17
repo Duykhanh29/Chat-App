@@ -1,5 +1,5 @@
-import 'package:chat_app/modules/group/controllers/group_controller.dart';
-import 'package:chat_app/modules/group/views/group_view.dart';
+import 'package:chat_app/modules/friend/controllers/friend_controller.dart';
+import 'package:chat_app/modules/friend/views/friend_view.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
 import 'package:chat_app/modules/messeger/views/message_view.dart';
 import 'package:chat_app/modules/profile/controllers/profile_controller.dart';
@@ -8,13 +8,17 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class HomeController extends GetxController {
-  List<Widget> page = [MessageView(), GroupView(), const ProfileView()];
+  List<Widget> page = [MessageView(), FriendView(), const ProfileView()];
   RxInt currentPageINdex = 0.obs;
 
   @override
   void onInit() {
     super.onInit();
-    Get.put(ProfileController());
+    Get.lazyPut(
+      () => ProfileController(),
+    );
+    Get.lazyPut(() => FriendController());
+    Get.lazyPut(() => ProfileController());
   }
 
   void updatePageIndex(int index) {

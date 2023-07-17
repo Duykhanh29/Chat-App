@@ -1,8 +1,12 @@
+import 'package:chat_app/data/common/methods.dart';
 import 'package:chat_app/data/models/message_data.dart';
 import 'package:chat_app/data/models/user.dart';
 import 'package:chat_app/modules/auth/controllers/auth_controller.dart';
+import 'package:chat_app/modules/friend/views/widgetss/view_profile.dart';
+import 'package:chat_app/modules/home/controllers/data_controller.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
 import 'package:chat_app/modules/messeger/views/widgets/message_tiles/call_message.dart';
+import 'package:chat_app/utils/helpers/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/src/widgets/framework.dart';
@@ -16,6 +20,7 @@ import '../widgets/message_tiles/audio_message.dart';
 import '../widgets/message_tiles/video_message.dart';
 import '../widgets/message_tiles/image_message.dart';
 import '../widgets/message_tiles/text_message.dart';
+import '../widgets/message_tiles/location_message.dart';
 import 'package:intl/intl.dart';
 import 'package:swipe_to/swipe_to.dart';
 
@@ -52,6 +57,11 @@ class MessageTile extends GetView<MessageController> {
           idMessageData: idMessageData);
     } else if (message.chatMessageType == ChatMessageType.FILE) {
       return TextMessage(
+          message: message,
+          currentUser: currentUser,
+          idMessageData: idMessageData);
+    } else if (message.chatMessageType == ChatMessageType.LOCATION) {
+      return LocationMessage(
           message: message,
           currentUser: currentUser,
           idMessageData: idMessageData);
@@ -136,7 +146,11 @@ class MessageTile extends GetView<MessageController> {
   Widget build(BuildContext context) {
     final controller = Get.find<MessageController>();
     final authController = Get.find<AuthController>();
+    final dataController = Get.find<DataController>();
+    final listAllUser = dataController.listAllUser.value;
     final currentUser = authController.currentUser.value;
+    final listUser = controller.relatedUserToCurrentUser.value;
+    final sender = CommonMethods.getUserFromID(listAllUser, message.senderID);
     return SwipeTo(
       onLeftSwipe: () {},
       onRightSwipe: () {
@@ -150,7 +164,7 @@ class MessageTile extends GetView<MessageController> {
           // } else {
           print('Test 2');
           print(
-              'Id: ${message.idMessage} and text: ${message.text} and type: ${message.chatMessageType} sender: ${message.sender!.id}');
+              'Id: ${message.idMessage} and text: ${message.text} and type: ${message.chatMessageType} sender: ${message.senderID}');
           controller.changeReplyMessage(message);
           controller.changeisReply();
           //  }
@@ -159,19 +173,23 @@ class MessageTile extends GetView<MessageController> {
       child: Container(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisAlignment: message.sender!.id != currentUser!.id
-              ? MainAxisAlignment.start
-              : MainAxisAlignment.end,
+          mainAxisAlignment:
+              message.chatMessageType == ChatMessageType.NOTIFICATION
+                  ? MainAxisAlignment.center
+                  : message.senderID != currentUser!.id
+                      ? MainAxisAlignment.start
+                      : MainAxisAlignment.end,
           children: [
-            if (message.sender!.id != currentUser.id) ...[
+            if (message.senderID != currentUser!.id &&
+                message.chatMessageType != ChatMessageType.NOTIFICATION) ...[
               InkWell(
                 onTap: () {
-                  // see profile
-                  print("see profile");
+                  // Get.to(ViewProfile(user: ));
                 },
                 child: CircleAvatar(
+                  radius: 15,
                   backgroundImage: NetworkImage(
-                    message.sender!.urlImage!,
+                    sender!.urlImage!,
                   ),
                 ),
               ),
@@ -182,27 +200,35 @@ class MessageTile extends GetView<MessageController> {
             // if (!message.isSender!) ...{
             //   getShareIcon(message),
             // },
-            Container(
-              margin: const EdgeInsets.only(top: 10, left: 6),
-              child: FittedBox(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Text(
-                    //   DateFormat.jm().format(message.dateTime!),
-                    //   style: TextStyle(fontSize: 11),
-                    // ),
-                    message.isDeleted
-                        ? controller.differenceHours(message) < 3
-                            ? DeletedWidget()
-                            : const DeletedForYou()
-                        : messageContain(message),
-                  ],
+            if (message.chatMessageType != ChatMessageType.NOTIFICATION) ...{
+              Container(
+                margin: message.senderID != currentUser.id
+                    ? const EdgeInsets.only(top: 10, left: 2)
+                    : const EdgeInsets.only(top: 10),
+                child: FittedBox(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Text(
+                      //   DateFormat.jm().format(message.dateTime!),
+                      //   style: TextStyle(fontSize: 11),
+                      // ),
+                      message.isDeleted
+                          ? (Validators.differenceHours(message) < 3
+                              ? DeletedWidget()
+                              : const DeletedForYou())
+                          : messageContain(message),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            if (message.sender!.id == currentUser.id)
+            } else ...{
+              NotificationMessage(message: message)
+            },
+
+            if (message.senderID == currentUser.id &&
+                message.chatMessageType != ChatMessageType.NOTIFICATION)
               Center(
                   child:
                       MessageStatusDot(messageStatus: message.messageStatus!)),
@@ -295,6 +321,22 @@ class DeletedForYou extends StatelessWidget {
       width: 10,
       child: Center(
         child: Text(""),
+      ),
+    );
+  }
+}
+
+class NotificationMessage extends StatelessWidget {
+  NotificationMessage({super.key, required this.message});
+  Message message;
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return Container(
+      decoration: BoxDecoration(color: Colors.brown.shade200),
+      height: size.height * 0.02,
+      child: Center(
+        child: Text(message.text!),
       ),
     );
   }
