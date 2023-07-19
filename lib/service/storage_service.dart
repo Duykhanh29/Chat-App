@@ -111,12 +111,36 @@ class Storage {
     final documentDirectory = await getApplicationDocumentsDirectory();
     final file = File('${documentDirectory.path}/image.jpg');
     await file.writeAsBytes(response.bodyBytes);
-    final galleryPath = await GallerySaver.saveImage(file.path);
-    if (galleryPath != null) {
-      print('Ảnh đã được lưu: $galleryPath');
-    } else {
-      print('Lỗi khi download ảnh');
+    try {
+      final galleryPath = await GallerySaver.saveImage(file.path);
+      Get.snackbar(
+        "Success",
+        "",
+        snackPosition: SnackPosition.TOP,
+        titleText: const Text("Download successfully"),
+        backgroundColor: Colors.greenAccent,
+      );
+      if (galleryPath != null) {
+        print('Ảnh đã được lưu: $galleryPath');
+      } else {
+        print('Lỗi khi download ảnh');
+      }
+    } catch (error) {
+      // Xử lý lỗi tại đây
+      print("Error saving image: $error");
+      Get.snackbar(
+        "Error",
+        "Failed to save image",
+        snackPosition: SnackPosition.TOP,
+        titleText: const Text("Error"),
+        backgroundColor: Colors.redAccent,
+      );
     }
+    // final galleryPath = await GallerySaver.saveImage(file.path).whenComplete(
+    //     () => Get.snackbar("Success", "",
+    //         snackPosition: SnackPosition.TOP,
+    //         titleText: const Text("Download successfully"),
+    //         backgroundColor: Colors.greenAccent));
   }
 
   //pdf

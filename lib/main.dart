@@ -11,15 +11,20 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:chat_app/modules/home/bindings/home_binding.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+      // options: DefaultFirebaseOptions.currentPlatform,
+      );
   //.then((value) => Get.put(AuthController()));
   // Get.put(AuthController());
   Get.lazyPut(
     () => AuthController(),
   );
+  await [Permission.microphone, Permission.camera].request();
   runApp(
     const MyApp(),
   );
@@ -51,7 +56,7 @@ class Home extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetBuilder<AuthController>(
       builder: (controller) {
-        if (firebaseAuth.currentUser != null) {
+        if (controller.currentUser.value != null) {
           return MainView();
         } else {
           return const StartPage();

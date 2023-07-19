@@ -114,7 +114,13 @@ class AuthController extends GetxController {
       //     "https://wallpaperaccess.com/full/393735.jpg"
     );
     userModel.User? newUser = await getDataFromFirebase(user);
-    currentUser.value!.urlCoverImage = newUser!.urlCoverImage;
+    if (newUser != null) {
+      currentUser.value!.urlCoverImage = newUser.urlCoverImage;
+    } else {
+      currentUser.value!.urlCoverImage =
+          "https://wallpaperaccess.com/full/393735.jpg";
+    }
+
     currentUser.value!.showALlAttribute();
     updateTextController(currentUser);
   }
@@ -377,9 +383,9 @@ class AuthController extends GetxController {
   //sign out
   Future signOut() async {
     await firebaseAuth.signOut();
+    await _googleSignIn.signOut();
     currentUser.value = null;
     user.value = null;
-    await _googleSignIn.signOut();
     isLogin.value = false;
     isGGLogin.value = false;
     isEMailVerified.value = false;

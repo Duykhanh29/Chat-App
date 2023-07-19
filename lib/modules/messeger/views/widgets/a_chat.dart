@@ -65,7 +65,8 @@ class AChat extends StatelessWidget {
       );
     } else {
       if (messageData.listMessages!.last.senderID != currentUser.id) {
-        if (messageData.listMessages!.last.isSeen!) {
+        if (messageData.listMessages!.last.isSeen != null &&
+            messageData.listMessages!.last.isSeen!) {
           if (messageData.listMessages!.last.chatMessageType ==
                   ChatMessageType.VIDEOCALL ||
               messageData.listMessages!.last.chatMessageType ==

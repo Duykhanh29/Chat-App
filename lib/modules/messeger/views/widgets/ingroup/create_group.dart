@@ -10,6 +10,7 @@ import 'package:chat_app/data/models/message_data.dart';
 import 'package:chat_app/data/models/user.dart';
 import 'package:chat_app/modules/auth/controllers/auth_controller.dart';
 import 'package:chat_app/modules/friend/controllers/friend_controller.dart';
+import 'package:uuid/uuid.dart';
 
 class CreateGroup extends StatelessWidget {
   CreateGroup({super.key});
@@ -168,6 +169,7 @@ class CreateGroup extends StatelessWidget {
                           chatMessageType: ChatMessageType.NOTIFICATION,
                           dateTime: Timestamp.now(),
                           senderID: currentUser.id,
+                          idMessage: Uuid().v4(),
                           text: "${currentUser.name} created group",
                           messageStatus: MessageStatus.RECEIVED);
                       messageController.sendAMessage(msg, messageData);

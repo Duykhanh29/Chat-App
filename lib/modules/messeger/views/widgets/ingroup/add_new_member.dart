@@ -10,6 +10,7 @@ import 'package:chat_app/data/models/message_data.dart';
 import 'package:chat_app/data/models/user.dart';
 import 'package:chat_app/modules/auth/controllers/auth_controller.dart';
 import 'package:chat_app/modules/friend/controllers/friend_controller.dart';
+import 'package:uuid/uuid.dart';
 
 class AddMember extends StatelessWidget {
   AddMember({super.key, required this.messageData, this.existedUser});
@@ -140,6 +141,7 @@ class AddMember extends StatelessWidget {
                             chatMessageType: ChatMessageType.NOTIFICATION,
                             dateTime: Timestamp.now(),
                             senderID: currentUser!.id,
+                            idMessage: Uuid().v4(),
                             text:
                                 "${user.name} was added by ${currentUser.name}",
                             messageStatus: MessageStatus.RECEIVED);

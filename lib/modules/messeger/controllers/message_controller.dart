@@ -4,12 +4,15 @@ import 'package:chat_app/data/common/methods.dart';
 import 'package:chat_app/data/models/friend.dart';
 import 'package:chat_app/data/models/message_data.dart';
 import 'package:chat_app/modules/auth/controllers/auth_controller.dart';
+import 'package:chat_app/utils/constants/constants.dart';
+import 'package:chat_app/utils/constants/servers_data.dart';
 import 'package:chat_app/utils/helpers/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:chat_app/data/models/user.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
 
 class MessageController extends GetxController {
   // import auth
@@ -136,18 +139,22 @@ class MessageController extends GetxController {
         .snapshots();
     StreamController<MessageData> controller = StreamController<MessageData>();
     final subscription = ref.listen((event) {
-      MessageData messageData = MessageData(
-          chatName: event.data()!['chatName'],
-          createdAt: event.data()!['createdAt'],
-          idMessageData: event.id,
-          groupImage: event.data()!['groupImage'],
-          listMessages: (event.data()!['listMessages'] as List<dynamic>)
-              .map((e) => Message.fromJson(e))
-              .toList(),
-          receivers: List<String>.from(event.data()!['receivers'])
-              .map((e) => e.toString())
-              .toList());
-      controller.sink.add(messageData);
+      if (event.exists) {
+        MessageData messageData = MessageData(
+            chatName: event.data()!['chatName'],
+            createdAt: event.data()!['createdAt'],
+            idMessageData: event.id,
+            groupImage: event.data()!['groupImage'],
+            listMessages: (event.data()!['listMessages'] as List<dynamic>)
+                .map((e) => Message.fromJson(e))
+                .toList(),
+            receivers: List<String>.from(event.data()!['receivers'])
+                .map((e) => e.toString())
+                .toList());
+        controller.sink.add(messageData);
+      } else {
+        controller.close();
+      }
     });
     //close subscription and controller
     controller.onCancel = () {
@@ -623,6 +630,8 @@ class MessageController extends GetxController {
     messageData = null;
   }
 
+  var lock = Object();
+
   void sendAMessage(Message message, MessageData messageData) async {
     try {
       CollectionReference messageDataCollections =
@@ -634,12 +643,34 @@ class MessageController extends GetxController {
       // Lấy tham chiếu đến tài liệu của người dùng trong collection "messageData"
       DocumentReference userDocRef =
           messageDataCollections.doc(messageData.idMessageData);
+
       FirebaseFirestore.instance.runTransaction((transaction) async {
         DocumentSnapshot messageDataDoc = await transaction.get(userDocRef);
         if (!messageDataDoc.exists) {
           // haven't sent any message before
-          messageData.listMessages!.add(message); // update to GetX
-          print('I am crazy\n');
+          messageData.listMessages!.add(
+            Message(
+              chatMessageType: message.chatMessageType,
+              dateTime: Timestamp.fromMicrosecondsSinceEpoch(
+                  DateTime.now().microsecondsSinceEpoch),
+              isDeleted: message.isDeleted,
+              isFoward: message.isFoward,
+              isReply: message.isReply,
+              isSearch: message.isSearch,
+              isSeen: message.isSeen,
+              idMessage: Uuid().v4(),
+              idReplyText: message.idReplyText,
+              longTime: message.longTime,
+              messageStatus: message.messageStatus,
+              replyToUserID: message.replyToUserID,
+              seenBy: message.seenBy,
+              senderID: firebaseAuth.currentUser!.uid,
+              text: message.text,
+            ),
+          ); // update to GetX
+
+          // DateTime serverTime = await ServerData.getServerTime();
+
           message.showALlAttribute();
           // update to firebase
           MessageData newMessageData = MessageData(
@@ -656,12 +687,42 @@ class MessageController extends GetxController {
           listMessageData.refresh();
         } else {
           // update to GetX
-          messageData.listMessages!.add(message);
+
+          String newMessageId = Uuid().v4();
+          messageData.listMessages!.add(
+            Message(
+              chatMessageType: message.chatMessageType,
+              dateTime: Timestamp.fromMicrosecondsSinceEpoch(
+                  DateTime.now().microsecondsSinceEpoch),
+              isDeleted: message.isDeleted,
+              isFoward: message.isFoward,
+              isReply: message.isReply,
+              isSearch: message.isSearch,
+              isSeen: message.isSeen,
+              idMessage: Uuid().v4(),
+              idReplyText: message.idReplyText,
+              longTime: message.longTime,
+              messageStatus: message.messageStatus,
+              replyToUserID: message.replyToUserID,
+              seenBy: message.seenBy,
+              senderID: firebaseAuth.currentUser!.uid,
+              text: message.text,
+            ),
+          );
           // update to FIrebase
           final data = {
             'createdAt': Timestamp.now(),
-            'listMessages':
-                messageData.listMessages!.map((msg) => msg.toJson()).toList(),
+            'listMessages': FieldValue.arrayUnion([message.toJson()]),
+            // messageData.listMessages!
+            //     .map((msg) => {
+            //           ...msg.toJson(),
+            //           if (msg.idMessage == message.idMessage)
+            //             'senderID': message.senderID,
+            //         })
+            //     .toList(),
+
+            // 'listMessages':
+            //     messageData.listMessages!.map((msg) => msg.toJson()).toList(),
           };
           transaction.update(userDocRef, data);
           // await userDocRef.update(data);
@@ -676,6 +737,7 @@ class MessageController extends GetxController {
         }
       });
       print("ID ò messageData: ${messageData.idMessageData}");
+
       // Lấy thông tin tài liệu của người dùng từ Firebase Firestore
     } catch (error) {
       print("An error occurred: $error");

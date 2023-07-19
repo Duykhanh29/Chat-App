@@ -408,30 +408,36 @@ class BuildImage extends StatelessWidget {
   Widget buildProfileImage(double heigh) => GestureDetector(
         onTap: () {
           Get.to(
-            () => Scaffold(
-              appBar: AppBar(
-                actions: [
-                  IconButton(
-                      onPressed: () async {
-                        if (currentUser!.urlImage != null) {
-                          await storage.downloadFileToLocalDevice(
-                              currentUser!.urlImage!, "image");
-                        } else {
-                          print("Cannot download");
-                        }
-                      },
-                      icon: const Icon(Icons.download_outlined))
-                ],
-              ),
-              body: SizedBox(
-                child: PhotoView(
-                  imageProvider: NetworkImage(currentUser!.urlImage!),
-                  backgroundDecoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
+            () {
+              User? user = authController.currentUser.value;
+              return Scaffold(
+                appBar: AppBar(
+                  actions: [
+                    IconButton(
+                        onPressed: () async {
+                          if (user!.urlImage != null) {
+                            await storage.downloadFileToLocalDevice(
+                                user.urlImage!, "image");
+                          } else {
+                            print("Cannot download");
+                          }
+                        },
+                        icon: const Icon(Icons.download_outlined))
+                  ],
+                ),
+                body: SizedBox(
+                  child: PhotoView(
+                    minScale: PhotoViewComputedScale.covered,
+                    maxScale: PhotoViewComputedScale
+                        .covered, // Đặt giá trị maxScale bằng minScale
+                    imageProvider: NetworkImage(user!.urlImage!),
+                    backgroundDecoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           );
         },
         child: Obx(
@@ -488,83 +494,89 @@ class BuildImage extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       builder: (_) {
-        return SizedBox(
-          height: MediaQuery.of(context).size.height * 0.18,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ListTile(
-                onTap: () {
-                  Get.to(
-                    () => Scaffold(
-                      appBar: AppBar(
-                        leading: IconButton(
-                          onPressed: () {
-                            Get.back();
-                            Get.back();
-                          },
-                          icon: const Icon(Icons.arrow_back),
-                        ),
-                        actions: [
-                          IconButton(
-                              onPressed: () async {
-                                await storage.downloadFileToLocalDevice(
-                                    currentUser!.urlCoverImage!, "image");
+        return Obx(
+          () {
+            User? user = authController.currentUser.value;
+            return SizedBox(
+              height: MediaQuery.of(context).size.height * 0.18,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ListTile(
+                    onTap: () {
+                      Get.to(
+                        () => Scaffold(
+                          appBar: AppBar(
+                            leading: IconButton(
+                              onPressed: () {
+                                Get.back();
+                                Get.back();
                               },
-                              icon: const Icon(Icons.download_outlined))
-                        ],
-                      ),
-                      body: SizedBox(
-                        child: PhotoView(
-                          imageProvider: NetworkImage(currentUser!
-                                  .urlCoverImage ??
-                              "https://wallpaperaccess.com/full/393735.jpg"),
-                          backgroundDecoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.5),
+                              icon: const Icon(Icons.arrow_back),
+                            ),
+                            actions: [
+                              IconButton(
+                                  onPressed: () async {
+                                    await storage.downloadFileToLocalDevice(
+                                        user!.urlCoverImage!, "image");
+                                  },
+                                  icon: const Icon(Icons.download_outlined))
+                            ],
+                          ),
+                          body: SizedBox(
+                            child: PhotoView(
+                              minScale: PhotoViewComputedScale.covered,
+                              maxScale: PhotoViewComputedScale.covered,
+                              imageProvider: NetworkImage(user!.urlCoverImage ??
+                                  "https://wallpaperaccess.com/full/393735.jpg"),
+                              backgroundDecoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.5),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                  );
-                },
-                title: const Text("See picture"),
-                leading: const Icon(Icons.picture_in_picture),
+                      );
+                    },
+                    title: const Text("See picture"),
+                    leading: const Icon(Icons.picture_in_picture),
+                  ),
+                  const Divider(),
+                  ListTile(
+                    onTap: () async {
+                      final result = await FilePicker.platform.pickFiles(
+                        allowMultiple: false,
+                        allowedExtensions: ['png', 'jpg'],
+                        type: FileType.custom,
+                      );
+                      if (result != null) {
+                        String? path = result.files.single.path;
+                        String fileName = result.files.single.name;
+                        String type = 'coverImages';
+                        bool isSuccess = await storage.uploadFile(
+                            path!, fileName, currentUser!.id!, type);
+                        if (isSuccess) {
+                          String url = await storage.downloadURL(
+                              fileName, currentUser!.id!, type);
+                          await authController.updateUserToFirebase(
+                              uid: currentUser!.id!, urlCoverImage: url);
+                          await authController.editUser(coverImage: url);
+                          authController.changeIsUpdateInforToTrue();
+                          await messageController.updateListAllUser();
+                          Navigator.of(context).pop();
+                        } else {
+                          print("Failed to choose new cover image");
+                        }
+                      } else {
+                        print("Nothing happend");
+                      }
+                    },
+                    leading: const Icon(Icons.my_library_add),
+                    title: const Text("Choose new picture"),
+                  ),
+                ],
               ),
-              const Divider(),
-              ListTile(
-                onTap: () async {
-                  final result = await FilePicker.platform.pickFiles(
-                    allowMultiple: false,
-                    allowedExtensions: ['png', 'jpg'],
-                    type: FileType.custom,
-                  );
-                  if (result != null) {
-                    String? path = result.files.single.path;
-                    String fileName = result.files.single.name;
-                    String type = 'coverImages';
-                    bool isSuccess = await storage.uploadFile(
-                        path!, fileName, currentUser!.id!, type);
-                    if (isSuccess) {
-                      String url = await storage.downloadURL(
-                          fileName, currentUser!.id!, type);
-                      await authController.updateUserToFirebase(
-                          uid: currentUser!.id!, urlCoverImage: url);
-                      await authController.editUser(coverImage: url);
-                      authController.changeIsUpdateInforToTrue();
-                      await messageController.updateListAllUser();
-                      Navigator.of(context).pop();
-                    } else {
-                      print("Failed to choose new cover image");
-                    }
-                  } else {
-                    print("Nothing happend");
-                  }
-                },
-                leading: const Icon(Icons.picture_in_picture),
-                title: const Text("Choose new picture"),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );

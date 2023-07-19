@@ -118,6 +118,8 @@ class ViewProfile extends StatelessWidget {
               ),
               body: Container(
                 child: PhotoView(
+                  minScale: PhotoViewComputedScale.covered,
+                  maxScale: PhotoViewComputedScale.covered,
                   imageProvider: NetworkImage(urlCoverImage),
                   backgroundDecoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.5),
@@ -159,6 +161,8 @@ class ViewProfile extends StatelessWidget {
               ),
               body: Container(
                 child: PhotoView(
+                  minScale: PhotoViewComputedScale.covered,
+                  maxScale: PhotoViewComputedScale.covered,
                   imageProvider: NetworkImage(url),
                   backgroundDecoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.5),

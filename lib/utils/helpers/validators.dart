@@ -62,6 +62,16 @@ class Validators {
     return false;
   }
 
+  static bool compareHour(DateTime dateTime) {
+    if (dateTime.day == DateTime.now().day &&
+        dateTime.month == DateTime.now().month &&
+        dateTime.year == DateTime.now().year &&
+        dateTime.hour == DateTime.now().hour) {
+      return true;
+    }
+    return false;
+  }
+
   static bool isSVG(String link) {
     if (link.contains(".svg")) {
       return true;

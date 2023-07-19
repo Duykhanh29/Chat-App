@@ -10,7 +10,7 @@ import 'package:chat_app/data/models/user.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
 import 'package:chat_app/modules/messeger/views/widgets/chatting_details.dart';
 import 'package:chat_app/modules/messeger/views/widgets/message_tile.dart';
-import 'package:chat_app/modules/messeger/views/widgets/call_page.dart';
+import 'package:chat_app/modules/messeger/views/widgets/audio_call/call_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +30,8 @@ import './components/recorder.dart';
 import './components/reply_msg_input.dart';
 import './components/cam.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:uuid/uuid.dart';
+import './audio_call/video_call.dart';
 
 class ChattingPage extends GetView<MessageController> {
   var messageController = TextEditingController();
@@ -59,6 +61,7 @@ class ChattingPage extends GetView<MessageController> {
             chatMessageType: ChatMessageType.IMAGE,
             isSeen: false,
             messageStatus: messageStatus,
+            idMessage: Uuid().v4(),
             dateTime: Timestamp.now(),
             senderID: currentUser!.id);
         message.showALlAttribute();
@@ -82,6 +85,7 @@ class ChattingPage extends GetView<MessageController> {
           isSeen: false,
           messageStatus: messageStatus,
           dateTime: Timestamp.now(),
+          idMessage: Uuid().v4(),
           senderID: currentUser!.id);
       message.showALlAttribute();
       controller.sendAMessage(message, messageData);
@@ -153,7 +157,8 @@ class ChattingPage extends GetView<MessageController> {
           FittedBox(
             child: IconButton(
               onPressed: () async {
-                await downloadAllImages(messageData, receivers, currentUser);
+                // await downloadAllImages(messageData, receivers, currentUser);
+                Get.to(() => VideoCall());
               },
               icon: CommonMethods.isOnlineChat(receivers, currentUser) == true
                   ? const Icon(
@@ -225,8 +230,9 @@ class ChattingPage extends GetView<MessageController> {
                 ? FittedBox(
                     child: IconButton(
                       onPressed: () async {
-                        await downloadAllImages(
-                            messageData, receivers, currentUser);
+                        // await downloadAllImages(
+                        //     messageData, receivers, currentUser);
+                        Get.to(() => VideoCall());
                       },
                       icon:
                           CommonMethods.isOnlineChat(receivers, currentUser) ==
@@ -464,17 +470,30 @@ class OldConversation extends StatelessWidget {
                       color: Colors.blueGrey,
                       child: Padding(
                         padding: const EdgeInsets.all(5),
-                        child:
-                            Validators.compareDate(message.dateTime!.toDate())
-                                ? const Text(
-                                    "Today",
-                                    style: TextStyle(fontSize: 12),
-                                  )
-                                : Text(
-                                    DateFormat.EEEE()
+                        child: Validators.compareDate(
+                                message.dateTime!.toDate())
+                            ? Validators.compareHour(message.dateTime!.toDate())
+                                ? Text(
+                                    DateFormat.Hm()
                                         .format(message.dateTime!.toDate()),
                                     style: const TextStyle(fontSize: 12),
-                                  ),
+                                  )
+                                : Validators.compareHour(
+                                        message.dateTime!.toDate())
+                                    ? const Text(
+                                        "Today",
+                                        style: TextStyle(fontSize: 12),
+                                      )
+                                    : Text(
+                                        DateFormat.EEEE()
+                                            .format(message.dateTime!.toDate()),
+                                        style: const TextStyle(fontSize: 12),
+                                      )
+                            : Text(
+                                DateFormat.EEEE()
+                                    .format(message.dateTime!.toDate()),
+                                style: const TextStyle(fontSize: 12),
+                              ),
                       ),
                     ),
                   ),
@@ -566,6 +585,7 @@ class NewConversation extends StatelessWidget {
                     chatMessageType: ChatMessageType.TEXT,
                     isSeen: false,
                     messageStatus: messageStatus,
+                    idMessage: Uuid().v4(),
                     dateTime: Timestamp.now(),
                     senderID: currentUser!.id);
                 message.showALlAttribute();
@@ -590,7 +610,7 @@ class NewConversation extends StatelessWidget {
   }
 }
 
-class Inputer extends StatelessWidget {
+class Inputer extends StatefulWidget {
   Inputer(
       {super.key,
       required this.authController,
@@ -609,6 +629,12 @@ class Inputer extends StatelessWidget {
   Storage storage = Storage();
   MessageData messageData;
   TextEditingController messageController;
+
+  @override
+  State<Inputer> createState() => _InputerState();
+}
+
+class _InputerState extends State<Inputer> {
   void _showPicker(context, MessageData messageData, List<User>? receivers,
       User? currentUser) {
     showModalBottomSheet(
@@ -641,10 +667,10 @@ class Inputer extends StatelessWidget {
                       type = 'audios';
                       chatMessageType = ChatMessageType.AUDIO;
                     }
-                    bool isSuccess = await storage.uploadFile(
+                    bool isSuccess = await widget.storage.uploadFile(
                         path, fileName, messageData.idMessageData!, type);
                     if (isSuccess) {
-                      String url = await storage.downloadURL(
+                      String url = await widget.storage.downloadURL(
                           fileName, messageData.idMessageData!, type);
                       MessageStatus messageStatus;
                       messageStatus = CommonMethods.getMessageStatus(
@@ -655,10 +681,11 @@ class Inputer extends StatelessWidget {
                           chatMessageType: ChatMessageType.IMAGE,
                           isSeen: false,
                           messageStatus: messageStatus,
+                          idMessage: Uuid().v4(),
                           dateTime: Timestamp.now(),
                           senderID: currentUser!.id);
                       message.showALlAttribute();
-                      controller.sendAMessage(message, messageData);
+                      widget.controller.sendAMessage(message, messageData);
                     } else {
                       print("Nothing happend");
                     }
@@ -692,9 +719,11 @@ class Inputer extends StatelessWidget {
   }
 
   var latitude = '';
+
   var longitude = '';
 
   late StreamSubscription<Position> streamSubscription;
+
   Future getCurrentLocation() async {
     bool enabledServices;
     enabledServices = await Geolocator.isLocationServiceEnabled();
@@ -719,239 +748,252 @@ class Inputer extends StatelessWidget {
     Position position = await Geolocator.getCurrentPosition();
     String latitude = position.latitude.toString();
     String longitude = position.longitude.toString();
-    controller.changeLongTitudeVsLattitude(
-        newLong: longitude, newLat: latitude);
+    widget.controller
+        .changeLongTitudeVsLattitude(newLong: longitude, newLat: latitude);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(children: [
-      Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
+    return SingleChildScrollView(
+      child: Column(
         children: [
-          Obx(
-            () => controller.isRecorder.value
-                ? const SizedBox(
-                    height: 25,
-                    width: 25,
-                  )
-                : IconButton(
-                    onPressed: () {
-                      controller.changeRecorder();
-                    },
-                    icon: const Icon(Icons.mic)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Obx(
+                () => widget.controller.isRecorder.value
+                    ? const SizedBox(
+                        height: 25,
+                        width: 25,
+                      )
+                    : IconButton(
+                        onPressed: () {
+                          widget.controller.changeRecorder();
+                        },
+                        icon: const Icon(Icons.mic)),
+              ),
+              const SizedBox(
+                width: 2,
+              ),
+              Obx(
+                () => widget.controller.isRecorder.value
+                    ? Flexible(
+                        flex: 3,
+                        child: Recorder(messageController: widget.controller))
+                    : Flexible(
+                        flex: 3,
+                        child: Column(children: [
+                          if (widget.controller.isReply.value) ...{
+                            BuildReplyMessageInput(
+                                currentUser:
+                                    widget.authController.currentUser.value,
+                                message: widget.controller.replyMessage!,
+                                user: CommonMethods.getUserFromID(
+                                  widget.receivers!,
+                                  widget.controller.replyToUserID,
+                                ))
+                          },
+                          TextField(
+                            focusNode: FocusNode(),
+                            controller: widget.messageController,
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.blueGrey[50],
+                              labelStyle: const TextStyle(fontSize: 12),
+                              contentPadding: const EdgeInsets.all(20),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                              suffixIcon: IconButton(
+                                  onPressed: () {
+                                    // await downloadAllVideo(
+                                    //     messageData,
+                                    //     receivers,
+                                    //     currentUser);
+                                    widget.controller.changeIsMore();
+                                  },
+                                  icon: const Icon(Icons.more_horiz_outlined)),
+                              prefixIcon: IconButton(
+                                onPressed: () async {
+                                  _showPicker(context, widget.messageData,
+                                      widget.receivers, widget.currentUser);
+                                },
+                                icon: const Icon(Icons.photo),
+                              ),
+                              hintText: "Aa",
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(20),
+                                borderSide:
+                                    const BorderSide(color: Colors.blueAccent),
+                              ),
+                            ),
+                          ),
+                        ]),
+                      ),
+              ),
+              IconButton(
+                onPressed: () {
+                  // notice
+                  // before take action, we need to stop everything is running such as stopping listen audio or video
+                  MessageStatus messageStatus;
+                  messageStatus = CommonMethods.getMessageStatus(
+                      widget.receivers, widget.currentUser);
+                  late Message message;
+                  bool isSend = true;
+                  if (widget.controller.isRecorder.value) {
+                    message = Message(
+                        text: "/data/user/0/com.example.chat_app/cache/audio2",
+                        chatMessageType: ChatMessageType.AUDIO,
+                        isSeen: false,
+                        messageStatus: messageStatus,
+                        dateTime: Timestamp.now(),
+                        senderID: widget.currentUser!.id);
+                    widget.controller.changeRecorder();
+                    print("Recorder");
+                  } else {
+                    if (widget.messageController.text != "" &&
+                        widget.messageController.text != null) {
+                      if (widget.controller.isReply.value) {
+                        message = Message(
+                            replyToUserID: widget.controller.replyToUserID,
+                            // idMessage: ,
+                            text: widget.messageController.text,
+                            chatMessageType: ChatMessageType.TEXT,
+                            isSeen: false,
+                            messageStatus: messageStatus,
+                            dateTime: Timestamp.now(),
+                            senderID: widget.currentUser!.id,
+                            isReply: true,
+                            idReplyText:
+                                widget.controller.replyMessage!.idMessage);
+                        print("Reply");
+                        message.showALlAttribute();
+                        widget.controller.changeisReply();
+                        widget.controller.resetReplyMessage();
+                      } else {
+                        message = Message(
+                            text: widget.messageController.text,
+                            chatMessageType: ChatMessageType.TEXT,
+                            isSeen: false,
+                            idMessage: Uuid().v4(),
+                            messageStatus: messageStatus,
+                            dateTime: Timestamp.now(),
+                            senderID: widget.currentUser!.id);
+                      }
+                    } else {
+                      // do nothing
+                      isSend = false;
+                    }
+                  }
+                  if (isSend) {
+                    message.showALlAttribute();
+                    print("ID in ms data: ${widget.messageData.idMessageData}");
+                    widget.controller.sendAMessage(message, widget.messageData);
+                    widget.messageController.text = "";
+                  }
+                },
+                icon: const Icon(
+                  Icons.send_sharp,
+                  color: Colors.blue,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(
-            width: 2,
-          ),
           Obx(
-            () => controller.isRecorder.value
-                ? Flexible(
-                    flex: 3, child: Recorder(messageController: controller))
-                : Flexible(
-                    flex: 3,
-                    child: Column(children: [
-                      if (controller.isReply.value) ...{
-                        BuildReplyMessageInput(
-                          currentUser: authController.currentUser.value,
-                          message: controller.replyMessage!,
-                          user: receiver,
-                        )
-                      },
-                      TextField(
-                        focusNode: FocusNode(),
-                        controller: messageController,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.blueGrey[50],
-                          labelStyle: const TextStyle(fontSize: 12),
-                          contentPadding: const EdgeInsets.all(20),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(25),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(25),
-                          ),
-                          suffixIcon: IconButton(
-                              onPressed: () {
-                                // await downloadAllVideo(
-                                //     messageData,
-                                //     receivers,
-                                //     currentUser);
-                                controller.changeIsMore();
-                              },
-                              icon: const Icon(Icons.more_horiz_outlined)),
-                          prefixIcon: IconButton(
-                            onPressed: () async {
-                              _showPicker(
-                                  context, messageData, receivers, currentUser);
-                            },
-                            icon: const Icon(Icons.photo),
-                          ),
-                          hintText: "Aa",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            borderSide:
-                                const BorderSide(color: Colors.blueAccent),
+            () {
+              var result = widget.controller.isMore.value;
+              if (widget.controller.isMore.value) {
+                return Container(
+                  height: 80,
+                  decoration: const BoxDecoration(
+                      color: Color.fromARGB(255, 232, 241, 245)),
+                  width: MediaQuery.of(context).size.width * 0.98,
+                  padding: const EdgeInsets.only(top: 5),
+                  margin: const EdgeInsets.only(top: 5),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      const SizedBox(
+                        width: 5,
+                      ),
+                      InkWell(
+                        onTap: () {},
+                        child: Container(
+                            height: 55,
+                            width: 55,
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(100),
+                                color: Colors.blue.withOpacity(0.1)),
+                            child: const Icon(Icons.emoji_emotions,
+                                color: Colors.blue, size: 25)),
+                      ),
+                      InkWell(
+                        onTap: () {},
+                        child: Container(
+                          height: 55,
+                          width: 55,
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(100),
+                              color: Colors.blue.withOpacity(0.1)),
+                          child: const Icon(
+                            Icons.attach_file_outlined,
+                            size: 25,
+                            color: Colors.blue,
                           ),
                         ),
                       ),
-                    ]),
+                      InkWell(
+                        onTap: () async {
+                          await getCurrentLocation();
+
+                          MessageStatus messageStatus;
+                          messageStatus = CommonMethods.getMessageStatus(
+                              widget.receivers, widget.currentUser);
+                          Message message = Message(
+                              text:
+                                  "${widget.controller.latitude.value},${widget.controller.longtitude.value}",
+                              chatMessageType: ChatMessageType.LOCATION,
+                              isSeen: false,
+                              messageStatus: messageStatus,
+                              idMessage: Uuid().v4(),
+                              dateTime: Timestamp.now(),
+                              senderID: widget.currentUser!.id);
+                          widget.controller
+                              .sendAMessage(message, widget.messageData);
+                          widget.controller.changeIsMore();
+                        },
+                        child: Container(
+                            height: 55,
+                            width: 55,
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(100),
+                                color: Colors.blue.withOpacity(0.1)),
+                            child: const Icon(
+                              Icons.location_pin,
+                              size: 25,
+                              color: Colors.blue,
+                            )),
+                      ),
+                      const SizedBox(
+                        width: 5,
+                      ),
+                    ],
                   ),
-          ),
-          IconButton(
-            onPressed: () {
-              // notice
-              // before take action, we need to stop everything is running such as stopping listen audio or video
-              MessageStatus messageStatus;
-              messageStatus =
-                  CommonMethods.getMessageStatus(receivers, currentUser);
-              late Message message;
-              bool isSend = true;
-              if (controller.isRecorder.value) {
-                message = Message(
-                    text: "/data/user/0/com.example.chat_app/cache/audio2",
-                    chatMessageType: ChatMessageType.AUDIO,
-                    isSeen: false,
-                    messageStatus: messageStatus,
-                    dateTime: Timestamp.now(),
-                    senderID: currentUser!.id);
-                controller.changeRecorder();
-                print("Recorder");
+                );
               } else {
-                if (messageController.text != "" &&
-                    messageController.text != null) {
-                  if (controller.isReply.value) {
-                    message = Message(
-                        replyToUserID: controller.replyToUserID,
-                        // idMessage: ,
-                        text: messageController.text,
-                        chatMessageType: ChatMessageType.TEXT,
-                        isSeen: false,
-                        messageStatus: messageStatus,
-                        dateTime: Timestamp.now(),
-                        senderID: currentUser!.id,
-                        isReply: true,
-                        idReplyText: controller.replyMessage!.idMessage);
-                    print("Reply");
-                    controller.changeisReply();
-                    controller.resetReplyMessage();
-                  } else {
-                    message = Message(
-                        text: messageController.text,
-                        chatMessageType: ChatMessageType.TEXT,
-                        isSeen: false,
-                        messageStatus: messageStatus,
-                        dateTime: Timestamp.now(),
-                        senderID: currentUser!.id);
-                  }
-                } else {
-                  // do nothing
-                  isSend = false;
-                }
-              }
-              if (isSend) {
-                message.showALlAttribute();
-                print("ID in ms data: ${messageData.idMessageData}");
-                controller.sendAMessage(message, messageData);
-                messageController.text = "";
+                return Container(
+                  height: 1,
+                );
               }
             },
-            icon: const Icon(
-              Icons.send_sharp,
-              color: Colors.blue,
-            ),
           ),
         ],
       ),
-      Obx(
-        () {
-          var result = controller.isMore.value;
-          if (controller.isMore.value) {
-            return Container(
-              height: 80,
-              decoration: const BoxDecoration(
-                  color: Color.fromARGB(255, 232, 241, 245)),
-              width: MediaQuery.of(context).size.width * 0.98,
-              padding: const EdgeInsets.only(top: 5),
-              margin: const EdgeInsets.only(top: 5),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  const SizedBox(
-                    width: 5,
-                  ),
-                  InkWell(
-                    onTap: () {},
-                    child: Container(
-                        height: 55,
-                        width: 55,
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(100),
-                            color: Colors.blue.withOpacity(0.1)),
-                        child: const Icon(Icons.emoji_emotions,
-                            color: Colors.blue, size: 25)),
-                  ),
-                  InkWell(
-                    onTap: () {},
-                    child: Container(
-                      height: 55,
-                      width: 55,
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(100),
-                          color: Colors.blue.withOpacity(0.1)),
-                      child: const Icon(
-                        Icons.attach_file_outlined,
-                        size: 25,
-                        color: Colors.blue,
-                      ),
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () async {
-                      await getCurrentLocation();
-
-                      MessageStatus messageStatus;
-                      messageStatus = CommonMethods.getMessageStatus(
-                          receivers, currentUser);
-                      Message message = Message(
-                          text:
-                              "${controller.latitude.value},${controller.longtitude.value}",
-                          chatMessageType: ChatMessageType.LOCATION,
-                          isSeen: false,
-                          messageStatus: messageStatus,
-                          dateTime: Timestamp.now(),
-                          senderID: currentUser!.id);
-                      controller.sendAMessage(message, messageData);
-                      controller.changeIsMore();
-                    },
-                    child: Container(
-                        height: 55,
-                        width: 55,
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(100),
-                            color: Colors.blue.withOpacity(0.1)),
-                        child: const Icon(
-                          Icons.location_pin,
-                          size: 25,
-                          color: Colors.blue,
-                        )),
-                  ),
-                  const SizedBox(
-                    width: 5,
-                  ),
-                ],
-              ),
-            );
-          } else {
-            return Container(
-              height: 1,
-            );
-          }
-        },
-      ),
-    ]);
+    );
   }
 }
 
@@ -980,78 +1022,86 @@ class TitleWidget extends StatelessWidget {
     }
 
     return FittedBox(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          InkWell(
-            child: CircleAvatar(
-              radius: outerRadius,
-              backgroundColor: Colors.red,
-              child: CircleAvatar(
-                radius: innerRadius,
-                backgroundImage: CommonMethods.isAGroup(messageData.receivers!)
-                    ? (messageData.groupImage == null
-                        ? const NetworkImage(
-                            "https://cdn-icons-png.flaticon.com/512/615/615075.png")
-                        : NetworkImage(messageData.groupImage!))
-                    : (receiver!.urlImage == null
-                        ? const NetworkImage(
-                            "https://t4.ftcdn.net/jpg/03/59/58/91/360_F_359589186_JDLl8dIWoBNf1iqEkHxhUeeOulx0wOC5.jpg")
-                        : NetworkImage(receiver!.urlImage!)),
-              ),
-            ),
-          ),
-          GestureDetector(
-            onTap: () {
-              if (controller.isSearch.value) {
-                controller.cancelSearch();
-              }
-              // Get.to(() => ChattingDetails(), arguments: messageData);
-              Get.to(() => ChattingDetails(
-                    messageData: messageData,
-                  ));
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(
-                  width: 20,
-                ),
-                Container(
-                  width: 180,
-                  padding: const EdgeInsets.only(left: 15),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      CommonMethods.isAGroup(messageData.receivers)
-                          ? (Text(
-                              messageData.chatName == null ||
-                                      messageData.chatName == ""
-                                  ? "No Group name"
-                                  : messageData.chatName!,
-                              style: const TextStyle(fontSize: 25),
-                            ))
-                          : (Text(receiver!.name == null
-                              ? "No name"
-                              : receiver!.name!)),
-                      const SizedBox(
-                        height: 5,
-                      ),
-                      Text(
-                        userStatus ?? "", //
-                        style: const TextStyle(fontSize: 13),
-                        overflow: TextOverflow.clip,
-                      )
-                    ],
+      child: GestureDetector(
+        onTap: () {
+          Get.to(() => ChattingDetails(
+                messageData: messageData,
+              ));
+        },
+        child: Container(
+          // decoration: BoxDecoration(color: Colors.green),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              InkWell(
+                child: CircleAvatar(
+                  radius: outerRadius,
+                  backgroundColor: Colors.red,
+                  child: CircleAvatar(
+                    radius: innerRadius,
+                    backgroundImage: CommonMethods.isAGroup(
+                            messageData.receivers!)
+                        ? (messageData.groupImage == null
+                            ? const NetworkImage(
+                                "https://cdn-icons-png.flaticon.com/512/615/615075.png")
+                            : NetworkImage(messageData.groupImage!))
+                        : (receiver!.urlImage == null
+                            ? const NetworkImage(
+                                "https://t4.ftcdn.net/jpg/03/59/58/91/360_F_359589186_JDLl8dIWoBNf1iqEkHxhUeeOulx0wOC5.jpg")
+                            : NetworkImage(receiver!.urlImage!)),
                   ),
                 ),
-              ],
-            ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  if (controller.isSearch.value) {
+                    controller.cancelSearch();
+                  }
+                  // Get.to(() => ChattingDetails(), arguments: messageData);
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                      width: 20,
+                    ),
+                    Container(
+                      width: 180,
+                      padding: const EdgeInsets.only(left: 15),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          CommonMethods.isAGroup(messageData.receivers)
+                              ? (Text(
+                                  messageData.chatName == null ||
+                                          messageData.chatName == ""
+                                      ? "No Group name"
+                                      : messageData.chatName!,
+                                  style: const TextStyle(fontSize: 25),
+                                ))
+                              : (Text(receiver!.name == null
+                                  ? "No name"
+                                  : receiver!.name!)),
+                          const SizedBox(
+                            height: 5,
+                          ),
+                          Text(
+                            userStatus ?? "", //
+                            style: const TextStyle(fontSize: 13),
+                            overflow: TextOverflow.clip,
+                          )
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

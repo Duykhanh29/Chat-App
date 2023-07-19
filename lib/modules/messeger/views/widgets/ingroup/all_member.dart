@@ -102,7 +102,7 @@ class ListMember extends StatelessWidget {
     final authController = Get.find<AuthController>();
     final groupController = Get.find<GroupController>();
     final currentUser = authController.currentUser.value;
-    final listALlUser = dataController.friends.value;
+    final listALlUser = dataController.listAllUser.value;
     // List<User>? friends = CommonMethods.getListUserFromFriends(
     //     friendController.listAllFriend.value, listALlUser);
     return Expanded(

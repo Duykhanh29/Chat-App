@@ -165,7 +165,8 @@ class MessageTile extends GetView<MessageController> {
           print('Test 2');
           print(
               'Id: ${message.idMessage} and text: ${message.text} and type: ${message.chatMessageType} sender: ${message.senderID}');
-          controller.changeReplyMessage(message);
+          controller.changeReplyMessage(
+              message); //message here is message which need reply(old msg)
           controller.changeisReply();
           //  }
         }

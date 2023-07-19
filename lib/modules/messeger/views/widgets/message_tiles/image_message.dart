@@ -87,6 +87,8 @@ class ImageMessage extends StatelessWidget {
                           ),
                           body: Container(
                             child: PhotoView(
+                              minScale: PhotoViewComputedScale.covered,
+                              maxScale: PhotoViewComputedScale.covered,
                               imageProvider: NetworkImage(message.text!),
                               backgroundDecoration: BoxDecoration(
                                 color: Colors.black.withOpacity(0.5),

@@ -21,6 +21,7 @@ import 'package:photo_view/photo_view.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:camera/camera.dart';
+import 'package:uuid/uuid.dart';
 
 class ChattingDetails extends GetView<MessageController> {
   ChattingDetails({super.key, required this.messageData});
@@ -126,12 +127,7 @@ class ChattingDetails extends GetView<MessageController> {
                           return const SizedBox();
                         } else if (snapshot.connectionState ==
                             ConnectionState.waiting) {
-                          return const CircleAvatar(
-                            radius: 60,
-                            child: Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                          );
+                          return const SizedBox();
                         } else {
                           if (snapshot.data != null) {
                             MessageData currentMsgData = MessageData(
@@ -152,7 +148,7 @@ class ChattingDetails extends GetView<MessageController> {
                                     controller.listAllUser.value);
                             if (CommonMethods.isAGroup(messageData.receivers) ==
                                 false) {
-                              receiver = CommonMethods.getReceiver(
+                              anUser = CommonMethods.getReceiver(
                                   listReceiver, currentUser);
                             }
                             return GestureDetector(
@@ -173,7 +169,7 @@ class ChattingDetails extends GetView<MessageController> {
                                                                 .receivers!)
                                                         ? currentMsgData
                                                             .groupImage
-                                                        : receiver!.urlImage!;
+                                                        : anUser!.urlImage!;
                                                 if (url != null) {
                                                   await storage
                                                       .downloadAndSaveImage(
@@ -188,6 +184,10 @@ class ChattingDetails extends GetView<MessageController> {
                                       ),
                                       body: Center(
                                         child: PhotoView(
+                                          minScale:
+                                              PhotoViewComputedScale.covered,
+                                          maxScale:
+                                              PhotoViewComputedScale.covered,
                                           imageProvider: CommonMethods.isAGroup(
                                                   currentMsgData.receivers!)
                                               ? (currentMsgData.groupImage ==
@@ -196,11 +196,11 @@ class ChattingDetails extends GetView<MessageController> {
                                                       "https://cdn-icons-png.flaticon.com/512/615/615075.png")
                                                   : NetworkImage(currentMsgData
                                                       .groupImage!))
-                                              : (receiver!.urlImage == null
+                                              : (anUser!.urlImage == null
                                                   ? const NetworkImage(
                                                       "https://t4.ftcdn.net/jpg/03/59/58/91/360_F_359589186_JDLl8dIWoBNf1iqEkHxhUeeOulx0wOC5.jpg")
                                                   : NetworkImage(
-                                                      receiver!.urlImage!)),
+                                                      anUser.urlImage!)),
                                           backgroundDecoration: BoxDecoration(
                                             color:
                                                 Colors.black.withOpacity(0.5),
@@ -233,7 +233,74 @@ class ChattingDetails extends GetView<MessageController> {
                               ),
                             );
                           } else {
-                            return const SizedBox();
+                            List<User>? receivers =
+                                CommonMethods.getAllUserInChat(
+                                    messageData.receivers!,
+                                    controller.listAllUser.value);
+                            User? targetUser = CommonMethods.getReceiver(
+                                receivers, currentUser);
+                            return GestureDetector(
+                              onTap: () {
+                                Get.to(
+                                  () => Scaffold(
+                                    appBar: AppBar(
+                                      leading: IconButton(
+                                          onPressed: () {
+                                            Get.back();
+                                          },
+                                          icon: const Icon(Icons.arrow_back)),
+                                      actions: [
+                                        IconButton(
+                                            onPressed: () async {
+                                              String? url =
+                                                  targetUser.urlImage!;
+                                              if (url != null) {
+                                                await storage
+                                                    .downloadAndSaveImage(url);
+                                              } else {
+                                                print("Cannot download");
+                                              }
+                                            },
+                                            icon: const Icon(
+                                                Icons.download_outlined))
+                                      ],
+                                    ),
+                                    body: Center(
+                                      child: PhotoView(
+                                        minScale:
+                                            PhotoViewComputedScale.covered,
+                                        maxScale:
+                                            PhotoViewComputedScale.covered,
+                                        imageProvider: (targetUser.urlImage ==
+                                                null
+                                            ? const NetworkImage(
+                                                "https://t4.ftcdn.net/jpg/03/59/58/91/360_F_359589186_JDLl8dIWoBNf1iqEkHxhUeeOulx0wOC5.jpg")
+                                            : NetworkImage(
+                                                targetUser.urlImage!)),
+                                        backgroundDecoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.5),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: CircleAvatar(
+                                radius: 60,
+                                backgroundColor: CommonMethods.isOnlineChat(
+                                            receivers, currentUser) ==
+                                        true
+                                    ? Colors.blue
+                                    : Colors.grey,
+                                child: CircleAvatar(
+                                    radius: 55,
+                                    backgroundImage: targetUser!.urlImage ==
+                                            null
+                                        ? const NetworkImage(
+                                            "https://t4.ftcdn.net/jpg/03/59/58/91/360_F_359589186_JDLl8dIWoBNf1iqEkHxhUeeOulx0wOC5.jpg")
+                                        : NetworkImage(targetUser.urlImage!)),
+                              ),
+                            );
                           }
                         }
                       },
@@ -268,6 +335,7 @@ class ChattingDetails extends GetView<MessageController> {
                                         ChatMessageType.NOTIFICATION,
                                     dateTime: Timestamp.now(),
                                     senderID: currentUser.id,
+                                    idMessage: Uuid().v4(),
                                     text:
                                         "${currentUser.name} changed group photo",
                                     messageStatus: MessageStatus.RECEIVED);
@@ -332,7 +400,7 @@ class ChattingDetails extends GetView<MessageController> {
                                 controller.listAllUser.value);
                         if (CommonMethods.isAGroup(messageData.receivers) ==
                             false) {
-                          receiver = CommonMethods.getReceiver(
+                          anUser = CommonMethods.getReceiver(
                               listReceiver, currentUser);
                         }
                         return CommonMethods.isAGroup(currentMsgData.receivers)
@@ -387,7 +455,9 @@ class ChattingDetails extends GetView<MessageController> {
                 ),
                 const Text("Customization"),
                 Container(
-                  height: MediaQuery.of(context).size.height * 0.15,
+                  height: CommonMethods.isAGroup(messageData.receivers)
+                      ? MediaQuery.of(context).size.height * 0.15
+                      : MediaQuery.of(context).size.height * 0.08,
                   width: MediaQuery.of(context).size.width,
                   child: Card(
                     shape: RoundedRectangleBorder(
@@ -605,6 +675,7 @@ class ChattingDetails extends GetView<MessageController> {
                                   chatMessageType: ChatMessageType.NOTIFICATION,
                                   dateTime: Timestamp.now(),
                                   senderID: currentUser.id,
+                                  idMessage: Uuid().v4(),
                                   text: "${currentUser.name} was left",
                                   messageStatus: MessageStatus.RECEIVED);
                               messageController.sendAMessage(msg, messageData);
@@ -658,6 +729,7 @@ class ChattingDetails extends GetView<MessageController> {
               chatMessageType: ChatMessageType.NOTIFICATION,
               dateTime: Timestamp.now(),
               senderID: currentUser.id,
+              idMessage: Uuid().v4(),
               text: "${currentUser.name} changed group name",
               messageStatus: MessageStatus.RECEIVED);
           messageController.sendAMessage(msg, messageData);

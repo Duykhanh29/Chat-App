@@ -27,7 +27,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
     super.initState();
     User? user = firebaseAuth.currentUser;
     authController.sendVerificationEmail(user);
-    timer = Timer.periodic(const Duration(seconds: 20), (data) async {
+    timer = Timer.periodic(const Duration(seconds: 50), (data) async {
       await checkEmailVerified(user);
     });
   }

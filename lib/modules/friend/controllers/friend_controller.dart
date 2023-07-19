@@ -228,14 +228,18 @@ class FriendController extends GetxController {
       if (event.exists) {
         final data = event.data() as Map<String, dynamic>;
         final requestedListData = data['requestedList'] as List<dynamic>;
-        List<FriendData> requestedList =
-            requestedListData.map((e) => FriendData.fromJson(e)).toList();
+
+        List<FriendData> requestedList = requestedListData == null
+            ? []
+            : requestedListData.map((e) => FriendData.fromJson(e)).toList();
         final listFriendData = data['listFriend'] as List<dynamic>;
-        List<FriendData> listFriend =
-            listFriendData.map((e) => FriendData.fromJson(e)).toList();
+        List<FriendData> listFriend = listFriendData == null
+            ? []
+            : listFriendData.map((e) => FriendData.fromJson(e)).toList();
         final queueListData = data['queueList'] as List<dynamic>;
-        List<FriendData> queueList =
-            queueListData.map((e) => FriendData.fromJson(e)).toList();
+        List<FriendData> queueList = queueListData == null
+            ? []
+            : queueListData.map((e) => FriendData.fromJson(e)).toList();
         String uid = event.id;
         Friends friend = Friends(
             listFriend: listFriend,
@@ -262,13 +266,15 @@ class FriendController extends GetxController {
         .get();
     var data = snapshot.data() as Map<String, dynamic>;
     final friendsData = data['listFriend'] as List<dynamic>;
-
-    final friends =
-        friendsData.map((friend) => FriendData.fromJson(friend)).toList();
-    for (var element in friends) {
-      User? user = await getUserFromID(element.idFriend!);
-      list.add(user!);
+    if (friendsData != null) {
+      final friends =
+          friendsData.map((friend) => FriendData.fromJson(friend)).toList();
+      for (var element in friends) {
+        User? user = await getUserFromID(element.idFriend!);
+        list.add(user!);
+      }
     }
+
     return list;
   }
 
@@ -279,12 +285,16 @@ class FriendController extends GetxController {
         .doc(currentUser.id)
         .get();
     var data = snapshot.data() as Map<String, dynamic>;
+
     final friendData = data['queueList'] as List<dynamic>;
-    final queueList = friendData.map((e) => FriendData.fromJson(e)).toList();
-    for (var element in queueList) {
-      User? user = await getUserFromID(element.idFriend!);
-      list.value.add(user!);
+    if (friendData != null) {
+      final queueList = friendData.map((e) => FriendData.fromJson(e)).toList();
+      for (var element in queueList) {
+        User? user = await getUserFromID(element.idFriend!);
+        list.value.add(user!);
+      }
     }
+
     return list;
   }
 
@@ -296,12 +306,16 @@ class FriendController extends GetxController {
         .doc(currentUser.id)
         .get();
     var data = snapshot.data() as Map<String, dynamic>;
+
     final friendData = data['requestedList'] as List<dynamic>;
-    final friends = friendData.map((e) => FriendData.fromJson(e)).toList();
-    for (var element in friends) {
-      User? user = await getUserFromID(element.idFriend!);
-      list.value.add(user!);
+    if (friendData != null) {
+      final friends = friendData.map((e) => FriendData.fromJson(e)).toList();
+      for (var element in friends) {
+        User? user = await getUserFromID(element.idFriend!);
+        list.value.add(user!);
+      }
     }
+
     return list;
   }
 
@@ -411,7 +425,7 @@ class FriendController extends GetxController {
 
     DocumentReference targetUserRef =
         FirebaseFirestore.instance.collection('friends').doc(targetUser!.id);
-    final targetUserSnapshot = await targetUserRef.get();
+    DocumentSnapshot targetUserSnapshot = await targetUserRef.get();
 
     // create a new friend data
     final currentFriendData = createFriendData(targetUser.id!);
