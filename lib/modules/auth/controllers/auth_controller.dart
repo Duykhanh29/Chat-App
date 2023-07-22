@@ -31,7 +31,7 @@ class AuthController extends GetxController {
   RxBool isEMailVerified = false.obs;
   RxBool isLoad = false.obs;
   RxBool isUpdateInfor = false.obs;
-
+  RxBool isPhone = false.obs;
   void changeIsUpdateInforToTrue() {
     isUpdateInfor.value = true;
   }
@@ -89,15 +89,43 @@ class AuthController extends GetxController {
     if (user != null) {
       var displayName = name ?? user.displayName;
       var photoURL = photoUrl ?? user.photoURL;
-      var phoneNumber = phone ?? user.phoneNumber;
+      Object? phoneNumber = phone ?? user.phoneNumber;
       var newEmail = email ?? user.email;
       await user.updateDisplayName(displayName);
       await user.updateEmail(newEmail!);
       await user.updatePhotoURL(photoURL);
       // await user.updatePhoneNumber(phoneNumber);
+      // await user.updatePhoneNumber(phoneNumber);
       print(
           "received value 2: displayName: $displayName, photoURL: $photoURL, phoneNumber:$phoneNumber, newEmail: $newEmail ");
       // updateUser(user);
+    }
+  }
+
+  Future<void> sendVerificationCodeToPhoneNumber(String phoneNumber) async {
+    try {
+      await firebaseAuth.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          // Automatic verification (e.g., on Android with auto-read SMS)
+          // In this example, we'll assume this case won't happen
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          print("Verification failed: ${e.message}");
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          print("Code sent to $phoneNumber");
+          // setState(() {
+          //   _verificationId = verificationId;
+          // });
+          print("verificationId: $verificationId");
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          print("Auto retrieval timeout");
+        },
+      );
+    } catch (e) {
+      print("Error sending verification code: $e");
     }
   }
 
@@ -380,6 +408,35 @@ class AuthController extends GetxController {
     }
   }
 
+// password
+  Future changePassword(
+      {required String? newPass,
+      required String? oldPass,
+      required String email}) async {
+    final cre = EmailAuthProvider.credential(email: email, password: oldPass!);
+    await firebaseAuth.currentUser!
+        .reauthenticateWithCredential(cre)
+        .then((value) => firebaseAuth.currentUser!.updatePassword(newPass!))
+        .catchError((err) {
+      print("An error occured: $email");
+    });
+  }
+
+  Future<bool> isValidCurrentPassword(String currentPassword) async {
+    try {
+      final user = firebaseAuth.currentUser;
+      final credential = EmailAuthProvider.credential(
+          email: user!.email!, password: currentPassword);
+      await firebaseAuth.currentUser!.reauthenticateWithCredential(credential);
+      print("isValidCurrentPassword: true");
+      return true;
+    } catch (e) {
+      print("Error: $e");
+      print("isValidCurrentPassword: false");
+      return false;
+    }
+  }
+
   //sign out
   Future signOut() async {
     await firebaseAuth.signOut();
@@ -621,11 +678,15 @@ class AuthController extends GetxController {
       String? coverImage}) async {
     var displayName = name ?? currentUser.value!.name;
     var photoURL = urlImage ?? currentUser.value!.urlImage;
+    if (phone != null) {
+      await sendVerificationCodeToPhoneNumber("+84$phone");
+    }
     var phoneNumber = phone ?? currentUser.value!.phoneNumber;
     var newEmail = email ?? currentUser.value!.email;
     var newCoverImage = coverImage ?? currentUser.value!.urlCoverImage;
     print(
         "received value: displayName: $displayName, photoURL: $photoURL, phoneNumber:$phoneNumber, newEmail: $newEmail ");
+
     userModel.User newUser = userModel.User(
         userStatus: currentUser.value!.userStatus,
         email: newEmail,

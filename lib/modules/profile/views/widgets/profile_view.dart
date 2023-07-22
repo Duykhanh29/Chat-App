@@ -146,12 +146,29 @@ class _ProfileViewState extends State<ProfileView> {
                           //     phone: authController.phoneController.value.text,
                           //     email: authController.emailController.value.text,
                           //     name: authController.nameController.value.text);
-                          await authController.updateUserToFirebase(
-                            uid: currentUser!.id!,
-                            email: authController.emailController.value.text,
-                            name: authController.nameController.value.text,
-                            phone: authController.phoneController.value.text,
-                          );
+
+                          await authController
+                              .editUser(
+                                phone:
+                                    authController.phoneController.value.text,
+                                name: authController.nameController.value.text,
+                                email:
+                                    authController.emailController.value.text,
+                              )
+                              .whenComplete(
+                                () => Get.snackbar("Success", "",
+                                    snackPosition: SnackPosition.TOP,
+                                    titleText:
+                                        const Text("Update successfully"),
+                                    backgroundColor: Colors.greenAccent),
+                              );
+                          ;
+                          authController.updateUserInAuth(
+                              name: authController.nameController.value.text,
+                              email: authController.emailController.value.text,
+                              phone: authController.phoneController.value.text);
+                          authController.changeIsUpdateInforToTrue();
+                          await messageController.updateListAllUser();
                           authController.changeIsUpdateInforToTrue();
                           print("Check now which value: \n");
                           authController.currentUser.value!.showALlAttribute();
@@ -375,7 +392,17 @@ class BuildImage extends StatelessWidget {
                               fileName, currentUser!.id!, type);
                           await authController.updateUserToFirebase(
                               uid: currentUser!.id!, urlImage: url);
-                          await authController.editUser(urlImage: url);
+                          authController.updateUserInAuth(photoUrl: url);
+                          await authController
+                              .editUser(urlImage: url)
+                              .whenComplete(
+                                () => Get.snackbar("Success", "",
+                                    snackPosition: SnackPosition.TOP,
+                                    titleText:
+                                        const Text("Update successfully"),
+                                    backgroundColor: Colors.greenAccent),
+                              );
+                          ;
                           authController.changeIsUpdateInforToTrue();
                           await messageController.updateListAllUser();
                         }
@@ -427,9 +454,9 @@ class BuildImage extends StatelessWidget {
                 ),
                 body: SizedBox(
                   child: PhotoView(
-                    minScale: PhotoViewComputedScale.covered,
-                    maxScale: PhotoViewComputedScale
-                        .covered, // Đặt giá trị maxScale bằng minScale
+                    minScale: PhotoViewComputedScale.covered * 0.8,
+                    maxScale: PhotoViewComputedScale.covered *
+                        4.0, // Đặt giá trị maxScale bằng minScale
                     imageProvider: NetworkImage(user!.urlImage!),
                     backgroundDecoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.5),
@@ -525,8 +552,8 @@ class BuildImage extends StatelessWidget {
                           ),
                           body: SizedBox(
                             child: PhotoView(
-                              minScale: PhotoViewComputedScale.covered,
-                              maxScale: PhotoViewComputedScale.covered,
+                              minScale: PhotoViewComputedScale.covered * 0.8,
+                              maxScale: PhotoViewComputedScale.covered * 4.0,
                               imageProvider: NetworkImage(user!.urlCoverImage ??
                                   "https://wallpaperaccess.com/full/393735.jpg"),
                               backgroundDecoration: BoxDecoration(
@@ -559,7 +586,15 @@ class BuildImage extends StatelessWidget {
                               fileName, currentUser!.id!, type);
                           await authController.updateUserToFirebase(
                               uid: currentUser!.id!, urlCoverImage: url);
-                          await authController.editUser(coverImage: url);
+                          await authController
+                              .editUser(coverImage: url)
+                              .whenComplete(
+                                () => Get.snackbar("Success", "",
+                                    snackPosition: SnackPosition.TOP,
+                                    titleText:
+                                        const Text("Update successfully"),
+                                    backgroundColor: Colors.greenAccent),
+                              );
                           authController.changeIsUpdateInforToTrue();
                           await messageController.updateListAllUser();
                           Navigator.of(context).pop();

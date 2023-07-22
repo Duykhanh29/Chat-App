@@ -294,8 +294,8 @@ class ChattingPage extends GetView<MessageController> {
               Get.back();
 
               // to find a receiver
-              var data = controller.listMessageData.firstWhere((data) =>
-                  data.receivers!.last == messageData.receivers!.last);
+              var data = controller.listMessageData.firstWhere(
+                  (data) => data.idMessageData == messageData.idMessageData);
               final messageList = data.listMessages!.reversed.toList();
               if (messageList.isEmpty) {
                 controller.deleteAChat(messageData);

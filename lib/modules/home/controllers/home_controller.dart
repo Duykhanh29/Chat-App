@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class HomeController extends GetxController {
-  List<Widget> page = [MessageView(), FriendView(), const ProfileView()];
+  List<Widget> page = [MessageView(), FriendView()];
   RxInt currentPageINdex = 0.obs;
 
   @override

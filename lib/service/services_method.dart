@@ -29,11 +29,15 @@ class ServiceMethod {
 
   static Future createFriendForNewUser(User? user) async {
     try {
-      Friends friend = Friends(userID: user!.id);
+      Friends friend = Friends(
+          userID: user!.id, listFriend: [], queueList: [], requestedList: []);
       final snapshot = await FirebaseFirestore.instance
           .collection('friends')
           .doc(user.id)
-          .set(friend.toJson());
+          .set(friend.toJson())
+          .whenComplete(() {
+        print("Oke fine");
+      });
     } catch (e) {
       print("An error occured: $e");
     }

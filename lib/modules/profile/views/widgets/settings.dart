@@ -16,6 +16,7 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text("Settings"),
       ),
@@ -176,9 +177,7 @@ class SettingsPage extends StatelessWidget {
                       child: const Icon(Icons.help, color: Colors.blue)),
                   title: const Text("Helps centre"),
                   trailing: IconButton(
-                      onPressed: () {
-                        Get.to(() => ViewMediaLink());
-                      },
+                      onPressed: () {},
                       icon: const Icon(Icons.navigate_next_sharp)),
                 ),
               ),

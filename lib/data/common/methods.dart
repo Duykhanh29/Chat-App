@@ -121,6 +121,17 @@ class CommonMethods {
     return list;
   }
 
+  static List<User>? showAllUserOnline(
+      List<User>? listAllUser, User? currentUser) {
+    List<User>? list = [];
+    for (var element in listAllUser!) {
+      if (element.userStatus == UserStatus.ONLINE) {
+        list.add(element);
+      }
+    }
+    return list;
+  }
+
   static List<String> convertListUserToListStringID(List<User>? list) {
     List<String> result = [];
     for (var element in list!) {

@@ -75,14 +75,20 @@ class FriendController extends GetxController {
       if (event.exists) {
         final data = event.data() as Map<String, dynamic>;
         final listData = data['listFriend'] as List<dynamic>;
-        List<FriendData> listFriend =
-            listData.map((e) => FriendData.fromJson(e)).toList();
-        List<User> listUser = [];
-        for (var element in listFriend) {
-          User? user = await getUserFromID(element.idFriend!);
-          listUser.add(user!);
+        if (listData != null) {
+          List<FriendData> listFriend =
+              listData.map((e) => FriendData.fromJson(e)).toList();
+          List<User> listUser = [];
+          for (var element in listFriend) {
+            User? user = await getUserFromID(element.idFriend!);
+            listUser.add(user!);
+          }
+          streamController.sink.add(listUser);
+        } else {
+          streamController.close();
         }
-        streamController.sink.add(listUser);
+      } else {
+        streamController.close();
       }
     });
     // when we don't need to listen, we close controller and subscription
@@ -101,14 +107,20 @@ class FriendController extends GetxController {
       if (event.exists) {
         final data = event.data() as Map<String, dynamic>;
         final listData = data['requestedList'] as List<dynamic>;
-        List<FriendData> listFriend =
-            listData.map((e) => FriendData.fromJson(e)).toList();
-        List<User> listUser = [];
-        for (var element in listFriend) {
-          User? user = await getUserFromID(element.idFriend!);
-          listUser.add(user!);
+        if (listData != null) {
+          List<FriendData> listFriend =
+              listData.map((e) => FriendData.fromJson(e)).toList();
+          List<User> listUser = [];
+          for (var element in listFriend) {
+            User? user = await getUserFromID(element.idFriend!);
+            listUser.add(user!);
+          }
+          controller.sink.add(listUser);
+        } else {
+          controller.close();
         }
-        controller.sink.add(listUser);
+      } else {
+        controller.close();
       }
     });
     // when we don't need to listen, we close controller and subscription
@@ -127,14 +139,20 @@ class FriendController extends GetxController {
       if (event.exists) {
         final data = event.data() as Map<String, dynamic>;
         final dataList = data['queueList'] as List<dynamic>;
-        List<FriendData> list =
-            dataList.map((e) => FriendData.fromJson(e)).toList();
-        List<User> listUser = [];
-        for (var element in list) {
-          User? user = await getUserFromID(element.idFriend!);
-          listUser.add(user!);
+        if (dataList != null) {
+          List<FriendData> list =
+              dataList.map((e) => FriendData.fromJson(e)).toList();
+          List<User> listUser = [];
+          for (var element in list) {
+            User? user = await getUserFromID(element.idFriend!);
+            listUser.add(user!);
+          }
+          controller.sink.add(listUser);
+        } else {
+          controller.close();
         }
-        controller.sink.add(listUser);
+      } else {
+        controller.close();
       }
     });
     // close controller and subscription
@@ -156,10 +174,16 @@ class FriendController extends GetxController {
       if (event.exists) {
         final data = event.data() as Map<String, dynamic>;
         final dataList = data['listFriend'] as List<dynamic>;
-        List<FriendData> listFriendData =
-            dataList.map((e) => FriendData.fromJson(e)).toList();
-        list = listFriendData;
-        controller.sink.add(list);
+        if (dataList != null) {
+          List<FriendData> listFriendData =
+              dataList.map((e) => FriendData.fromJson(e)).toList();
+          list = listFriendData;
+          controller.sink.add(list);
+        } else {
+          controller.close();
+        }
+      } else {
+        controller.close();
       }
     });
     // close controller and subscription
@@ -181,10 +205,16 @@ class FriendController extends GetxController {
       if (event.exists) {
         final data = event.data() as Map<String, dynamic>;
         final dataList = data['queueList'] as List<dynamic>;
-        List<FriendData> listFriendData =
-            dataList.map((e) => FriendData.fromJson(e)).toList();
-        list = listFriendData;
-        controller.sink.add(list);
+        if (dataList != null) {
+          List<FriendData> listFriendData =
+              dataList.map((e) => FriendData.fromJson(e)).toList();
+          list = listFriendData;
+          controller.sink.add(list);
+        } else {
+          controller.close();
+        }
+      } else {
+        controller.close();
       }
     });
     // close controller and subscription
@@ -206,10 +236,16 @@ class FriendController extends GetxController {
       if (event.exists) {
         final data = event.data() as Map<String, dynamic>;
         final dataList = data['requestedList'] as List<dynamic>;
-        List<FriendData> listFriendData =
-            dataList.map((e) => FriendData.fromJson(e)).toList();
-        list = listFriendData;
-        controller.sink.add(list);
+        if (dataList != null) {
+          List<FriendData> listFriendData =
+              dataList.map((e) => FriendData.fromJson(e)).toList();
+          list = listFriendData;
+          controller.sink.add(list);
+        } else {
+          controller.close();
+        }
+      } else {
+        controller.close();
       }
     });
     // close controller and subscription
@@ -224,7 +260,17 @@ class FriendController extends GetxController {
     DocumentReference ref =
         FirebaseFirestore.instance.collection('friends').doc(currentUser.id);
     StreamController<Friends?> controller = StreamController<Friends>();
-    StreamSubscription subscription = ref.snapshots().listen((event) {
+    bool isListening = true;
+    StreamSubscription? subscription;
+    void cancelSubscription() {
+      if (isListening) {
+        subscription?.cancel();
+        controller.close();
+        isListening = false;
+      }
+    }
+
+    subscription = ref.snapshots().listen((event) {
       if (event.exists) {
         final data = event.data() as Map<String, dynamic>;
         final requestedListData = data['requestedList'] as List<dynamic>;
@@ -247,12 +293,13 @@ class FriendController extends GetxController {
             requestedList: requestedList,
             userID: uid);
         controller.sink.add(friend);
+      } else {
+        cancelSubscription();
       }
     });
     //close controller and subscription
     controller.onCancel = () {
-      subscription.cancel();
-      controller.close();
+      cancelSubscription();
     };
     yield* controller.stream;
   }
@@ -428,8 +475,8 @@ class FriendController extends GetxController {
     DocumentSnapshot targetUserSnapshot = await targetUserRef.get();
 
     // create a new friend data
-    final currentFriendData = createFriendData(targetUser.id!);
-    final targetFriendData = createFriendData(currentUser.id!);
+    FriendData currentFriendData = createFriendData(targetUser.id!);
+    FriendData targetFriendData = createFriendData(currentUser.id!);
     DocumentSnapshot currentSnapshot = await currentUserRef.get();
     if (currentSnapshot.exists && targetUserSnapshot.exists) {
       // for  current User
@@ -449,13 +496,15 @@ class FriendController extends GetxController {
       // for target user
       final targetQueueData = targetUserSnapshot.data() as Map<String, dynamic>;
       final targetQueue = targetQueueData['queueList'] as List<dynamic>;
-      List<FriendData> targetQueueList =
-          targetQueue.map((e) => FriendData.fromJson(e)).toList();
-      targetQueueList.add(targetFriendData);
-      final datatFortargetUser = {
-        'queueList': targetQueueList.map((e) => e.toJson()).toList()
-      };
-      await targetUserRef.update(datatFortargetUser);
+      if (targetQueue != null) {
+        List<FriendData> targetQueueList =
+            targetQueue.map((e) => FriendData.fromJson(e)).toList();
+        targetQueueList.add(targetFriendData);
+        final datatFortargetUser = {
+          'queueList': targetQueueList.map((e) => e.toJson()).toList()
+        };
+        await targetUserRef.update(datatFortargetUser);
+      }
     }
 
     // listRequestedFriend.refresh();
@@ -512,7 +561,7 @@ class FriendController extends GetxController {
       await currentRef.update(dataForCurrentUser);
 
       // for target user
-      final targetData = currentSnapshot.data() as Map<String, dynamic>;
+      final targetData = targetSnapshot.data() as Map<String, dynamic>;
       final targetListFriendData = targetData['listFriend'] as List<dynamic>;
       final targetListSentData = targetData['requestedList'] as List<dynamic>;
       List<FriendData> targetFriend =
@@ -558,7 +607,7 @@ class FriendController extends GetxController {
       await currentRef.update(dataForCurrentUser);
 
       // for target user
-      final targetData = currentSnapshot.data() as Map<String, dynamic>;
+      final targetData = targetSnapshot.data() as Map<String, dynamic>;
       final targetListSentData = targetData['requestedList'] as List<dynamic>;
       List<FriendData> targetFriendListSent =
           targetListSentData.map((e) => FriendData.fromJson(e)).toList();
@@ -596,7 +645,7 @@ class FriendController extends GetxController {
       await currentRef.update(dataForCurrentUser);
 
       // for target user
-      final targetData = currentSnapshot.data() as Map<String, dynamic>;
+      final targetData = targetSnapshot.data() as Map<String, dynamic>;
       final targetListQueueData = targetData['queueList'] as List<dynamic>;
       List<FriendData> targetFriendListQueue =
           targetListQueueData.map((e) => FriendData.fromJson(e)).toList();

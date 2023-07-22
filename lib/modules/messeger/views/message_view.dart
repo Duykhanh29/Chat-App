@@ -1,10 +1,13 @@
 import 'package:chat_app/data/common/menu_items.dart';
+import 'package:chat_app/data/common/methods.dart';
 import 'package:chat_app/data/models/menu_item.dart';
 import 'package:chat_app/data/models/message_data.dart';
 import 'package:chat_app/data/models/user.dart';
 import 'package:chat_app/modules/auth/controllers/auth_controller.dart';
+import 'package:chat_app/modules/friend/controllers/friend_controller.dart';
 import 'package:chat_app/modules/messeger/controllers/group_controller.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
+import 'package:chat_app/modules/messeger/views/widgets/chatting_page.dart';
 import 'package:chat_app/modules/messeger/views/widgets/ingroup/create_group.dart';
 import 'package:chat_app/modules/profile/views/widgets/profile_view.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -42,9 +45,9 @@ class MessageView extends GetView<MessageController> {
 
   void onSelected(BuildContext context, MenuItem item) {
     switch (item) {
-      case MenuItems.addFriend:
-        Get.to(() => ProfileView());
-        break;
+      // case MenuItems.addFriend:
+      //   Get.to(() => ProfileView());
+      //   break;
       case MenuItems.createGroup:
         Get.to(() => CreateGroup());
         break;
@@ -56,8 +59,10 @@ class MessageView extends GetView<MessageController> {
     print("devicePixelRatio ${MediaQuery.of(context).devicePixelRatio}");
     Get.put(MessageController());
     Get.put(GroupController());
+    Get.put(FriendController());
     final groupController = Get.find<GroupController>();
     final controller = Get.find<MessageController>();
+    final friendController = Get.find<FriendController>();
     var listUser = controller.listAllUser;
     var listMessageData = controller.listMessageData.value;
     final authController = Get.find<AuthController>();
@@ -186,14 +191,40 @@ class MessageView extends GetView<MessageController> {
                   Column(
                     children: [
                       Obx(
-                        () => CircleAvatar(
-                          radius: 30,
-                          backgroundImage: authController.currentUser.value !=
-                                  null
-                              ? NetworkImage(
-                                  authController.currentUser.value!.urlImage!)
-                              : const NetworkImage(
-                                  "https://st3.depositphotos.com/6672868/13701/v/450/depositphotos_137014128-stock-illustration-user-profile-icon.jpg"),
+                        () => GestureDetector(
+                          onTap: () {
+                            var messageData = controller.getMessageDataOneByOne(
+                                currentUser!, currentUser);
+
+                            if (messageData == null) {
+                              List<String> list = [];
+                              CommonMethods.addToReceiverListOneByOne(
+                                  list: list,
+                                  receiver: currentUser.id,
+                                  sender: currentUser.id);
+                              MessageData newMessageData = MessageData(
+                                  // sender: currentUser,
+                                  listMessages: [],
+                                  receivers: list);
+                              controller.addNewChat(
+                                  newMessageData); // because of this user haven't chatted with me before
+                              Get.to(() => ChattingPage(),
+                                  arguments: newMessageData);
+                            } else {
+                              //  messageData.showALlAttribute();
+                              Get.to(() => ChattingPage(),
+                                  arguments: messageData);
+                            }
+                          },
+                          child: CircleAvatar(
+                            radius: 30,
+                            backgroundImage: authController.currentUser.value !=
+                                    null
+                                ? NetworkImage(
+                                    authController.currentUser.value!.urlImage!)
+                                : const NetworkImage(
+                                    "https://st3.depositphotos.com/6672868/13701/v/450/depositphotos_137014128-stock-illustration-user-profile-icon.jpg"),
+                          ),
                         ),
                       ),
                       const SizedBox(
@@ -212,27 +243,38 @@ class MessageView extends GetView<MessageController> {
                     child: Obx(() {
                       print("Render");
                       List<User> list = controller.listAllUser.value;
-                      return ListView.separated(
-                          separatorBuilder: (context, index) => const SizedBox(
-                                width: 3,
-                              ),
-                          scrollDirection: Axis.horizontal,
-                          itemBuilder: (context, index) {
-                            // list.removeWhere(
-                            //   (element) => element.id == currentUser!.id,
-                            // );
-                            User user = list[index];
-                            return user.id != currentUser!.id
-                                ? AnUser(
-                                    receiver: user,
-                                    //   messageData: messageData,
-                                  )
-                                : const SizedBox(
-                                    height: 1,
-                                    width: 1,
-                                  );
-                          },
-                          itemCount: list.length);
+
+                      // final listUser = CommonMethods.getListUserFromFriends(
+                      //     listFriend, list);
+                      final listFriend = friendController.listFriends.value;
+                      final listOnlineFriend = CommonMethods.showAllUserOnline(
+                          listFriend, currentUser);
+                      if (listOnlineFriend != null) {
+                        return ListView.separated(
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(
+                                  width: 3,
+                                ),
+                            scrollDirection: Axis.horizontal,
+                            itemBuilder: (context, index) {
+                              // list.removeWhere(
+                              //   (element) => element.id == currentUser!.id,
+                              // );
+                              User user = listOnlineFriend[index];
+                              return user.id != currentUser!.id
+                                  ? AnUser(
+                                      receiver: user,
+                                      //   messageData: messageData,
+                                    )
+                                  : const SizedBox(
+                                      height: 1,
+                                      width: 1,
+                                    );
+                            },
+                            itemCount: listOnlineFriend.length);
+                      } else {
+                        return const SizedBox();
+                      }
                     }),
                   ),
                 ],

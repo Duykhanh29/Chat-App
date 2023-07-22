@@ -47,12 +47,12 @@ class MainView extends GetView<HomeController> {
                   color: Colors.white70,
                 ),
                 label: "Friends"),
-            BottomNavigationBarItem(
-                icon: Icon(
-                  Icons.person_2,
-                  color: Colors.white70,
-                ),
-                label: "Profile"),
+            // BottomNavigationBarItem(
+            //     icon: Icon(
+            //       Icons.person_2,
+            //       color: Colors.white70,
+            //     ),
+            //     label: "Profile"),
           ],
           currentIndex: controller.currentPageINdex.value,
         ),

@@ -179,6 +179,7 @@ class MessageController extends GetxController {
         listMsgData.add(MessageData.fromJson(element.data()));
       }
       if (searchKey.isEmpty) {
+        searchListUser.value = [];
         streamController.sink.add(listMsgData);
       } else {
         List<MessageData> result = listMsgData.where((data) {
@@ -198,21 +199,30 @@ class MessageController extends GetxController {
                 .contains(searchKey.toLowerCase());
           }
         }).toList();
-        if (result.isEmpty) {
-          List<User> userList = [];
-          // List<User> result = [];
-          for (var user in listAllUser) {
-            if (!isCheckExistUser(listMsgData, user)) {
-              userList.add(user);
-            }
+        // if (result.isEmpty) {
+        List<User> userList = [];
+        // List<User> result = [];
+        for (var user in listAllUser) {
+          if (!isCheckExistUser(listMsgData, user) &&
+              user.id != currentUser.id) {
+            userList.add(user);
           }
-          searchListUser.value = userList
-              .where((data) => data.name
-                  .toString()
-                  .toLowerCase()
-                  .contains(searchKey.toLowerCase()))
-              .toList();
         }
+        searchListUser.value = userList.where((data) {
+          final nameContainsSearchKey = data.name
+              .toString()
+              .toLowerCase()
+              .contains(searchKey.toLowerCase());
+
+          final emailContainsSearchKey = data.email
+              .toString()
+              .toLowerCase()
+              .contains(searchKey.toLowerCase());
+
+          return nameContainsSearchKey || emailContainsSearchKey;
+        }).toList();
+        final x = searchListUser.value;
+        // }
         streamController.sink.add(result);
       }
     });

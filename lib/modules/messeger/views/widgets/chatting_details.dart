@@ -185,9 +185,11 @@ class ChattingDetails extends GetView<MessageController> {
                                       body: Center(
                                         child: PhotoView(
                                           minScale:
-                                              PhotoViewComputedScale.covered,
+                                              PhotoViewComputedScale.covered *
+                                                  0.8,
                                           maxScale:
-                                              PhotoViewComputedScale.covered,
+                                              PhotoViewComputedScale.covered *
+                                                  4.0,
                                           imageProvider: CommonMethods.isAGroup(
                                                   currentMsgData.receivers!)
                                               ? (currentMsgData.groupImage ==
@@ -268,9 +270,11 @@ class ChattingDetails extends GetView<MessageController> {
                                     body: Center(
                                       child: PhotoView(
                                         minScale:
-                                            PhotoViewComputedScale.covered,
+                                            PhotoViewComputedScale.covered *
+                                                0.8,
                                         maxScale:
-                                            PhotoViewComputedScale.covered,
+                                            PhotoViewComputedScale.covered *
+                                                4.0,
                                         imageProvider: (targetUser.urlImage ==
                                                 null
                                             ? const NetworkImage(

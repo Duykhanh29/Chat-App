@@ -8,6 +8,7 @@ import 'package:chat_app/routes/app_page.dart';
 import 'package:chat_app/utils/constants/constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:chat_app/modules/home/bindings/home_binding.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -16,6 +17,7 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // SystemChrome.setSystemUIOverlayStyle(style)
   await Firebase.initializeApp(
       // options: DefaultFirebaseOptions.currentPlatform,
       );
