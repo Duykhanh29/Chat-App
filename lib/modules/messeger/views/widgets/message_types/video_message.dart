@@ -72,8 +72,9 @@ class VideoMessage extends StatelessWidget {
                 GestureDetector(
                   onLongPress: () {
                     // if (!message.isSender!) {
-                    controller.changeIsChoose();
                     controller.toggleDeleteID(message.idMessage!);
+                    controller.changeIsChoose();
+
                     // }
                   },
                   child: SizedBox(

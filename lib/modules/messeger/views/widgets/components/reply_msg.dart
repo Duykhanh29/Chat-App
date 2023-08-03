@@ -1,4 +1,5 @@
 import 'package:chat_app/data/common/methods.dart';
+import 'package:chat_app/modules/home/controllers/data_controller.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:chat_app/data/models/message_data.dart';
@@ -52,7 +53,7 @@ class ReplyMessageWidget extends StatelessWidget {
     } else if (message.chatMessageType == ChatMessageType.VIDEO) {
       return const Text("Video", style: TextStyle(color: Colors.black54));
     } else if (message.chatMessageType == ChatMessageType.VIDEOCALL ||
-        message.chatMessageType == ChatMessageType.CALL) {
+        message.chatMessageType == ChatMessageType.AUDIOCALL) {
       return const Text("Call", style: TextStyle(color: Colors.black54));
     } else if (message.chatMessageType == ChatMessageType.IMAGE) {
       return Container(
@@ -85,8 +86,9 @@ class ReplyMessageWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<MessageController>();
-    final listUser = controller.relatedUserToCurrentUser.value;
-    final user = CommonMethods.getUserFromID(listUser, replyUserID);
+    Get.lazyPut(() => DataController());
+    final dataController = Get.find<DataController>();
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -110,11 +112,24 @@ class ReplyMessageWidget extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Expanded(
-                      child: Text(
-                        replyMessage.senderID != currentUser!.id
-                            ? user!.name ?? "No name"
-                            : currentUser!.name!,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      child: Obx(
+                        () {
+                          final listAllUser = dataController.listAllUser.value;
+                          User? user;
+                          if (listAllUser != null && listAllUser.isNotEmpty) {
+                            user = CommonMethods.getUserFromID(
+                                listAllUser, replyUserID);
+                            return Text(
+                              replyMessage.senderID != currentUser!.id
+                                  ? user!.name ?? "No name"
+                                  : currentUser!.name!,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                            );
+                          } else {
+                            return const SizedBox();
+                          }
+                        },
                       ),
                     ),
                     // else...{

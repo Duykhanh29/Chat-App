@@ -132,7 +132,7 @@ class AuthController extends GetxController {
   Future updateUser(User user) async {
     currentUser.value = userModel.User(
       email: user.email,
-      name: user.displayName ?? "No name",
+      name: user.displayName ?? "User",
       id: user.uid,
       phoneNumber: user.phoneNumber,
       urlImage: user.photoURL ??
@@ -342,9 +342,9 @@ class AuthController extends GetxController {
               ),
               backgroundColor: Colors.redAccent);
         } else {
-          addUserToFirebase(result.user!); // HERE
+          await addUserToFirebase(result.user!); // HERE
           // create a new document in friend
-          ServiceMethod.createFriendForNewUser(currentUser.value);
+          await ServiceMethod.createFriendForNewUser(currentUser.value);
           // final value = await sendEmailVerification(result.user);
           // if (value) {
           // bool isVerified = isEmailVerified(result.user!);

@@ -66,9 +66,9 @@ class MessageView extends GetView<MessageController> {
     var listUser = controller.listAllUser;
     var listMessageData = controller.listMessageData.value;
     final authController = Get.find<AuthController>();
-    User? currentUser;
+    // User? currentUser;
     // if (authController.isLogin.value) {
-    currentUser = authController.currentUser.value!;
+    //   currentUser = authController.currentUser.value!;
     // }
     final msgDatas = FirebaseFirestore.instance.collection('messageDatas');
     return Scaffold(
@@ -103,53 +103,76 @@ class MessageView extends GetView<MessageController> {
             Container(
               padding: const EdgeInsets.only(right: 5, left: 5),
               height: 45,
-              child: Center(
-                  child: currentUser != null
-                      ? StreamBuilder(
-                          stream: controller
-                              .getListMsgDataOfCurrentUser(currentUser),
-                          builder: (context, snapshot) {
-                            if (snapshot.hasData) {
-                              final data = snapshot.data;
-                              List<MessageData> listMsgData = data!;
+              child: Obx(
+                () {
+                  User? currentUser = authController.currentUser.value;
+                  return Center(
+                      child: currentUser != null
+                          ? StreamBuilder(
+                              stream: controller
+                                  .getListMsgDataOfCurrentUser(currentUser),
+                              builder: (context, snapshot) {
+                                if (snapshot.hasData) {
+                                  final data = snapshot.data;
+                                  List<MessageData> listMsgData = data!;
 
-                              //controller.listMessageData.value = listMsgData;
-                              // Obx(
-                              //   () {
-                              // controller.setListMessageData(listMsgData);
-                              // controller.listMessageData.value = listMsgData;
-                              // controller.searchListMessageData.value =
-                              //     listMsgData;
-                              final list = controller.listMessageData;
-                              return TextField(
-                                onChanged: (value) {
-                                  // controller.updateDisplayedMsgData(value);
-                                  controller.changeSearchKey(value);
-                                },
-                                // controller.filterMsgData(value),
-                                // controller.filterListMessageData(
-                                //     searchController.text, list),
-                                controller: searchController,
-                                decoration: InputDecoration(
-                                  contentPadding:
-                                      const EdgeInsets.symmetric(vertical: 10),
-                                  prefixIcon: const Icon(Icons.search),
-                                  hintText: "Search for friends",
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(30),
+                                  //controller.listMessageData.value = listMsgData;
+                                  // Obx(
+                                  //   () {
+                                  // controller.setListMessageData(listMsgData);
+                                  // controller.listMessageData.value = listMsgData;
+                                  // controller.searchListMessageData.value =
+                                  //     listMsgData;
+                                  final list = controller.listMessageData;
+                                  return TextField(
+                                    onChanged: (value) {
+                                      // controller.updateDisplayedMsgData(value);
+                                      controller.changeSearchKey(value);
+                                    },
+                                    // controller.filterMsgData(value),
+                                    // controller.filterListMessageData(
+                                    //     searchController.text, list),
+                                    controller: searchController,
+                                    decoration: InputDecoration(
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              vertical: 10),
+                                      prefixIcon: const Icon(Icons.search),
+                                      hintText: "Search for friends",
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(30),
+                                      ),
+                                    ),
+                                    // );
+                                    // },
+                                  );
+                                }
+                                return TextField(
+                                  onChanged: (value) {
+                                    controller.changeSearchKey(value);
+                                  },
+                                  // controller.filterListMessageData(
+                                  //     searchController.text,
+                                  //     controller.listMessageData),
+                                  controller: searchController,
+                                  decoration: InputDecoration(
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        vertical: 10),
+                                    prefixIcon: const Icon(Icons.search),
+                                    hintText: "Search for friends",
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
                                   ),
-                                ),
-                                // );
-                                // },
-                              );
-                            }
-                            return TextField(
-                              onChanged: (value) {
-                                controller.changeSearchKey(value);
+                                );
                               },
-                              // controller.filterListMessageData(
-                              //     searchController.text,
-                              //     controller.listMessageData),
+                              // child:
+                            )
+                          : TextField(
+                              onChanged: (value) =>
+                                  controller.filterListMessageData(
+                                      searchController.text,
+                                      controller.listMessageData),
                               controller: searchController,
                               decoration: InputDecoration(
                                 contentPadding:
@@ -160,26 +183,9 @@ class MessageView extends GetView<MessageController> {
                                   borderRadius: BorderRadius.circular(30),
                                 ),
                               ),
-                            );
-                          },
-                          // child:
-                        )
-                      : TextField(
-                          onChanged: (value) =>
-                              controller.filterListMessageData(
-                                  searchController.text,
-                                  controller.listMessageData),
-                          controller: searchController,
-                          decoration: InputDecoration(
-                            contentPadding:
-                                const EdgeInsets.symmetric(vertical: 10),
-                            prefixIcon: const Icon(Icons.search),
-                            hintText: "Search for friends",
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                          ),
-                        )),
+                            ));
+                },
+              ),
             ),
             const SizedBox(
               height: 10,
@@ -193,6 +199,8 @@ class MessageView extends GetView<MessageController> {
                       Obx(
                         () => GestureDetector(
                           onTap: () {
+                            User? currentUser =
+                                authController.currentUser.value;
                             var messageData = controller.getMessageDataOneByOne(
                                 currentUser!, currentUser);
 
@@ -243,12 +251,16 @@ class MessageView extends GetView<MessageController> {
                     child: Obx(() {
                       print("Render");
                       List<User> list = controller.listAllUser.value;
-
+                      User? currentUser = authController.currentUser.value;
                       // final listUser = CommonMethods.getListUserFromFriends(
                       //     listFriend, list);
                       final listFriend = friendController.listFriends.value;
+                      final listUserInChats =
+                          controller.relatedUserToCurrentUser.value;
+                      final mergedList =
+                          CommonMethods.mergeList(listFriend, listUserInChats);
                       final listOnlineFriend = CommonMethods.showAllUserOnline(
-                          listFriend, currentUser);
+                          mergedList, currentUser);
                       if (listOnlineFriend != null) {
                         return ListView.separated(
                             separatorBuilder: (context, index) =>

@@ -668,7 +668,7 @@ class MessageController extends GetxController {
               isReply: message.isReply,
               isSearch: message.isSearch,
               isSeen: message.isSeen,
-              idMessage: Uuid().v4(),
+              // idMessage: Uuid().v4(),
               idReplyText: message.idReplyText,
               longTime: message.longTime,
               messageStatus: message.messageStatus,
@@ -698,7 +698,7 @@ class MessageController extends GetxController {
         } else {
           // update to GetX
 
-          String newMessageId = Uuid().v4();
+          // String newMessageId = Uuid().v4();
           messageData.listMessages!.add(
             Message(
               chatMessageType: message.chatMessageType,
@@ -709,7 +709,7 @@ class MessageController extends GetxController {
               isReply: message.isReply,
               isSearch: message.isSearch,
               isSeen: message.isSeen,
-              idMessage: Uuid().v4(),
+              // idMessage: Uuid().v4(),       // if wrong => delete this comment
               idReplyText: message.idReplyText,
               longTime: message.longTime,
               messageStatus: message.messageStatus,
@@ -737,13 +737,6 @@ class MessageController extends GetxController {
           transaction.update(userDocRef, data);
           // await userDocRef.update(data);
           // update data
-          listMessageData.refresh();
-          for (var element in listMessageData) {
-            if (element.idMessageData ==
-                "a110fc82-c493-4613-81d1-ce07468174de") {
-              print("Image: ${element.groupImage}");
-            }
-          }
         }
       });
       print("ID ò messageData: ${messageData.idMessageData}");
@@ -841,9 +834,11 @@ class MessageController extends GetxController {
 
   bool isCheckExistUser(List<MessageData> list, User user) {
     for (var data in list) {
-      if (data.receivers!.length == 1) {
-        if (data.receivers!.last == user.id) {
+      if (data.receivers!.contains(user.id)) {
+        if (data.receivers!.length == 2) {
+          // if (data.receivers!.last == user.id) {
           return true;
+          // }
         }
       }
     }
@@ -992,6 +987,40 @@ class MessageController extends GetxController {
     }
     listMessageData.refresh(); // update data
     resetDeleteForYou();
+  }
+
+  Future deleteAMsg(String idMsg, MessageData messageData,
+      {bool justForYou = false}) async {
+    CollectionReference messageDataCollections =
+        FirebaseFirestore.instance.collection('messageDatas');
+    QuerySnapshot querySnapshot = await messageDataCollections.get();
+    DocumentReference userDocRef =
+        messageDataCollections.doc(messageData.idMessageData);
+    final snapshot = await userDocRef.get();
+    if (snapshot.exists) {
+      final listMsg = snapshot.data() as Map<String, dynamic>;
+      final messages = listMsg['listMessages'] as List<dynamic>;
+      List<Message>? listMessage =
+          messages.map((e) => Message.fromJson(e)).toList();
+      for (var element in listMessage) {
+        if (element.idMessage == idMsg) {
+          if (justForYou) {
+            // element.isDeleted = true;
+          } else {
+            if (Validators.differenceHours(element) < 3) {
+              element.isDeleted = true;
+              element.text = "NULL";
+            } else {
+              element.isDeleted = true;
+            }
+          }
+        }
+      }
+      final data = {
+        'listMessages': listMessage.map((e) => e.toJson()).toList()
+      };
+      await userDocRef.update(data);
+    }
   }
 
   void resetDeleteForYou() {

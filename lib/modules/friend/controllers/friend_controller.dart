@@ -451,13 +451,21 @@ class FriendController extends GetxController {
       streamQueueFriendData = getQueueFriendDataOfCurrentUser(currentUser);
       streamRequestedFriendData = getSentFriendDataOfCurrentUser(currentUser);
       friends = getFriend(currentUser);
+      listFriends.refresh();
+      update();
     }
   }
 
   @override
-  void onReady() {
+  void onReady() async {
     // TODO: implement onReady
     super.onReady();
+    // User? currentUser = authController.currentUser.value;
+    // listFriends.value = await listFriendsOfCurrentUser(currentUser!);
+  }
+
+  void showData() {
+    print("Length: ${listFriends.value.length}");
   }
 
   @override
@@ -551,7 +559,6 @@ class FriendController extends GetxController {
       currentFriendListQueue
           .removeWhere((element) => element.idFriend == targetUser.id);
       // update to RxList<user> friends
-      listFriends.value = await getUserFromListFriendData(currentFriend);
 
       // update to firebase
       final dataForCurrentUser = {
@@ -559,6 +566,7 @@ class FriendController extends GetxController {
         'queueList': currentFriendListQueue.map((e) => e.toJson()).toList(),
       };
       await currentRef.update(dataForCurrentUser);
+      listFriends.value = await listFriendsOfCurrentUser(currentUser);
 
       // for target user
       final targetData = targetSnapshot.data() as Map<String, dynamic>;

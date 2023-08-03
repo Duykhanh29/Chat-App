@@ -31,13 +31,14 @@ class ChooseOptions extends GetView<MessageController> {
                   SizedBox(
                     width: double.infinity,
                     child: TextButton(
-                      onPressed: () {
+                      onPressed: () async {
                         // Thực hiện hành động xóa vĩnh viễn
                         //   Navigator.pop(context);
-                        controller.deleteAMessage(
+                        await controller.deleteAMsg(
                             message.idMessage!, messageData);
                         controller.changeIsChoose();
-                        Navigator.pop(context);
+                        Get.back();
+                        // Navigator.pop(context);
                       },
                       child: const Text('Unsend for everyone'),
                     ),
@@ -47,13 +48,15 @@ class ChooseOptions extends GetView<MessageController> {
                 SizedBox(
                   width: double.infinity,
                   child: TextButton(
-                    onPressed: () {
+                    onPressed: () async {
                       // Thực hiện hành động xóa
                       //   Navigator.pop(context);
-                      controller.deleteAMessage(message.idMessage!, messageData,
+                      await controller.deleteAMsg(
+                          message.idMessage!, messageData,
                           justForYou: true);
                       controller.changeIsChoose();
-                      Navigator.pop(context);
+                      Get.back();
+                      // Navigator.pop(context);
                     },
                     child: const Text('Unsend for you'),
                   ),

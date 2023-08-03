@@ -64,8 +64,8 @@ class ImageMessage extends StatelessWidget {
               GestureDetector(
                 onLongPress: () {
                   if (message.senderID == currentUser.id) {
-                    controller.changeIsChoose();
                     controller.toggleDeleteID(message.idMessage!);
+                    controller.changeIsChoose();
                   }
                 },
                 child: SizedBox(

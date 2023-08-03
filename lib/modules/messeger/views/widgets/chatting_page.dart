@@ -2,6 +2,9 @@ import 'dart:async';
 import 'dart:io';
 import 'package:chat_app/modules/auth/controllers/auth_controller.dart';
 import 'package:chat_app/modules/friend/controllers/friend_controller.dart';
+import 'package:chat_app/modules/messeger/controllers/call_controller.dart';
+import 'package:chat_app/modules/messeger/views/widgets/audio_call/call_notification.dart';
+import 'package:chat_app/modules/messeger/views/widgets/audio_call/waiting_call.dart';
 import 'package:chat_app/modules/messeger/views/widgets/components/camera.dart';
 import 'package:chat_app/service/storage_service.dart';
 import 'package:clipboard/clipboard.dart';
@@ -10,7 +13,7 @@ import 'package:chat_app/data/models/user.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
 import 'package:chat_app/modules/messeger/views/widgets/chatting_details.dart';
 import 'package:chat_app/modules/messeger/views/widgets/message_tile.dart';
-import 'package:chat_app/modules/messeger/views/widgets/audio_call/call_page.dart';
+import 'package:chat_app/modules/messeger/views/widgets/audio_call/audio_call_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -36,6 +39,7 @@ import './audio_call/video_call.dart';
 class ChattingPage extends GetView<MessageController> {
   var messageController = TextEditingController();
   ChattingPage({super.key});
+
   //MessageData? messageData;
   final scrollController = ScrollController();
   Storage storage = Storage();
@@ -133,14 +137,20 @@ class ChattingPage extends GetView<MessageController> {
     );
   }
 
-  List<Widget> actions(
-          MessageData messageData, List<User>? receivers, User currentUser) =>
+  List<Widget> actions(MessageData messageData, List<User>? receivers,
+          User currentUser, FriendController controller) =>
       <Widget>[
         if (CommonMethods.isAGroup(messageData.receivers)) ...{
           FittedBox(
             child: IconButton(
               onPressed: () {
-                Get.to(() => CallPage(), arguments: messageData);
+                Get.to(
+                    () => WaitingCall(
+                          messageData: messageData,
+                          senderID: currentUser.id,
+                        ),
+                    arguments: messageData);
+                // Get.to(() => Waiting());
               },
               icon: CommonMethods.isOnlineChat(receivers, currentUser) == true
                   ? const Icon(
@@ -158,7 +168,13 @@ class ChattingPage extends GetView<MessageController> {
             child: IconButton(
               onPressed: () async {
                 // await downloadAllImages(messageData, receivers, currentUser);
-                Get.to(() => VideoCall());
+                final videoCallController = Get.put(CallController());
+                videoCallController.addCreatorInfor(
+                    messageData.idMessageData!, currentUser.id!);
+                Get.to(() => VideoCall(
+                      messageData: messageData,
+                      sender: currentUser,
+                    ));
               },
               icon: CommonMethods.isOnlineChat(receivers, currentUser) == true
                   ? const Icon(
@@ -174,7 +190,11 @@ class ChattingPage extends GetView<MessageController> {
           ),
           FittedBox(
             child: IconButton(
-                onPressed: () {},
+                onPressed: () {
+                  Get.to(() => CallNotification(
+                      messageData: messageData, type: "VIDEOCALL"));
+                  // Get.to(() => CallNotify());
+                },
                 icon: const Icon(
                   Icons.more_horiz_rounded,
                   size: 22,
@@ -184,15 +204,18 @@ class ChattingPage extends GetView<MessageController> {
           Obx(
             () {
               final friendController = Get.find<FriendController>();
-              List<User> listFriends = friendController.listFriends;
-
+              List<User> listFriends = friendController.listFriends.value;
               User? receiver =
                   CommonMethods.getReceiver(receivers, currentUser);
               return CommonMethods.isFriend(receiver!.id!, listFriends) == true
                   ? FittedBox(
                       child: IconButton(
                         onPressed: () {
-                          Get.to(() => CallPage(), arguments: messageData);
+                          Get.to(() => WaitingCall(
+                                messageData: messageData,
+                                senderID: currentUser.id,
+                              ));
+                          // Get.to(() => Waiting());
                         },
                         icon: CommonMethods.isOnlineChat(
                                     receivers, currentUser) ==
@@ -222,8 +245,8 @@ class ChattingPage extends GetView<MessageController> {
             },
           ),
           Obx(() {
-            final friendController = Get.find<FriendController>();
-            List<User> listFriends = friendController.listFriends;
+            final friendController = Get.put(FriendController());
+            List<User> listFriends = friendController.listFriends.value;
 
             User? receiver = CommonMethods.getReceiver(receivers, currentUser);
             return CommonMethods.isFriend(receiver!.id!, listFriends) == true
@@ -232,7 +255,13 @@ class ChattingPage extends GetView<MessageController> {
                       onPressed: () async {
                         // await downloadAllImages(
                         //     messageData, receivers, currentUser);
-                        Get.to(() => VideoCall());
+                        final videoCallController = Get.put(CallController());
+                        videoCallController.addCreatorInfor(
+                            messageData.idMessageData!, currentUser.id!);
+                        Get.to(() => VideoCall(
+                              messageData: messageData,
+                              sender: currentUser,
+                            ));
                       },
                       icon:
                           CommonMethods.isOnlineChat(receivers, currentUser) ==
@@ -255,7 +284,11 @@ class ChattingPage extends GetView<MessageController> {
           }),
           FittedBox(
             child: IconButton(
-                onPressed: () {},
+                onPressed: () async {
+                  Get.to(() => CallNotification(
+                      messageData: messageData, type: "VIDEOCALL"));
+                  // Get.to(() => CallNotify());
+                },
                 icon: const Icon(
                   Icons.more_horiz_rounded,
                   size: 22,
@@ -267,7 +300,7 @@ class ChattingPage extends GetView<MessageController> {
   Widget build(BuildContext context) {
     Get.put(MessageController());
     Get.put(AuthController());
-    Get.put(FriendController());
+    // Get.put(FriendController());
     final controller = Get.find<MessageController>();
     final authController = Get.find<AuthController>();
     final friendController = Get.find<FriendController>();
@@ -282,9 +315,7 @@ class ChattingPage extends GetView<MessageController> {
     if (CommonMethods.isAGroup(messageData.receivers) == false) {
       receiver = CommonMethods.getReceiver(receivers, currentUser);
     }
-    final msgData = FirebaseFirestore.instance
-        .collection('messageDatas')
-        .doc(messageData.idMessageData);
+    MessageData? msgData = messageData;
     List<User> friends = friendController.listFriends;
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -311,6 +342,9 @@ class ChattingPage extends GetView<MessageController> {
               if (controller.isMore.value) {
                 controller.changeIsMore();
               }
+              if (controller.isChoosen.value) {
+                controller.changeIsChoose();
+              }
             },
             icon: const Icon(Icons.arrow_back_ios)),
         title: Obx(() => controller.isSearch.value
@@ -322,10 +356,15 @@ class ChattingPage extends GetView<MessageController> {
                 receiver: receiver,
                 userStatus:
                     receiver == null ? null : userStatus(receiver.userStatus))),
-        actions: actions(messageData, receivers, currentUser),
+        actions: actions(messageData, receivers, currentUser, friendController),
       ),
       body: Obx(
         () {
+          if (controller.listMessageData.value.isEmpty) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
           var data = controller.listMessageData.firstWhere(
               (data) => data.idMessageData == messageData.idMessageData);
           final messageList = data.listMessages!.reversed.toList();
@@ -339,42 +378,48 @@ class ChattingPage extends GetView<MessageController> {
 
               StreamBuilder(
                 builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    //  final messageDt = snapshot.data!;
-                    // if (snapshot.data != null) {
-                    MessageData currentMsgData = MessageData(
-                      idMessageData: snapshot.data!.idMessageData,
-                      chatName: snapshot.data!.chatName,
-                      groupImage: snapshot.data!.groupImage,
-                      listMessages: (snapshot.data!.listMessages),
-                      // .toList(),
-                      receivers: List<String>.from(snapshot.data!.receivers!),
+                  if (snapshot.connectionState == ConnectionState.none) {
+                    return Container();
+                  } else if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
                     );
-
-                    final messages = currentMsgData.listMessages;
-                    if (CommonMethods.isAGroup(currentMsgData.receivers) &&
-                        (currentMsgData.listMessages!.isEmpty)) {
+                  } else {
+                    if (snapshot.data != null) {
+                      MessageData currentMsgData = MessageData(
+                        idMessageData: snapshot.data!.idMessageData,
+                        chatName: snapshot.data!.chatName,
+                        groupImage: snapshot.data!.groupImage,
+                        listMessages: (snapshot.data!.listMessages),
+                        // .toList(),
+                        receivers: List<String>.from(snapshot.data!.receivers!),
+                      );
+                      msgData = currentMsgData;
+                      final messages = currentMsgData.listMessages;
+                      if (CommonMethods.isAGroup(currentMsgData.receivers) &&
+                          (currentMsgData.listMessages!.isEmpty)) {
+                        return NewConversation(
+                            messageData: messageData,
+                            currentUser: currentUser,
+                            controller: controller,
+                            receivers: receivers,
+                            friends: friends);
+                      }
+                      return OldConversation(
+                          messageData: currentMsgData,
+                          //        receivers: receivers,
+                          currentUser: currentUser,
+                          controller: controller);
+                    } else {
                       return NewConversation(
                           messageData: messageData,
                           currentUser: currentUser,
                           controller: controller,
                           receivers: receivers,
                           friends: friends);
+                      // return const Center(child: CircularProgressIndicator());
                     }
-                    return OldConversation(
-                        messageData: currentMsgData,
-                        //        receivers: receivers,
-                        currentUser: currentUser,
-                        controller: controller);
-                    // }
-                  } else {
-                    return NewConversation(
-                        messageData: messageData,
-                        currentUser: currentUser,
-                        controller: controller,
-                        receivers: receivers,
-                        friends: friends);
-                    // return const Center(child: CircularProgressIndicator());
                   }
                 },
                 stream: controller.getMesgData(messageData),
@@ -384,9 +429,9 @@ class ChattingPage extends GetView<MessageController> {
                 padding: const EdgeInsets.only(top: 10),
                 child: Obx(() => controller.isChoosen.value
                     ? ChooseOptions(
-                        messageData: messageData,
+                        messageData: msgData!,
                         message: controller.findMessageFromID(
-                            controller.deletedID.value, messageData)!,
+                            controller.deletedID.value, msgData!)!,
                       )
                     : Inputer(
                         authController: authController,

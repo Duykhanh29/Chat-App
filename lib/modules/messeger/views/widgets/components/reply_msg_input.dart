@@ -42,7 +42,7 @@ class ReplyMessageWidgetInput extends StatelessWidget {
     } else if (message.chatMessageType == ChatMessageType.VIDEO) {
       return const Text("Video", style: TextStyle(color: Colors.black54));
     } else if (message.chatMessageType == ChatMessageType.VIDEOCALL ||
-        message.chatMessageType == ChatMessageType.CALL) {
+        message.chatMessageType == ChatMessageType.AUDIOCALL) {
       return const Text("Call", style: TextStyle(color: Colors.black54));
     } else if (message.chatMessageType == ChatMessageType.IMAGE) {
       return Container(

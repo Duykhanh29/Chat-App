@@ -64,16 +64,185 @@ class AChat extends StatelessWidget {
         style: TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
       );
     } else {
-      if (messageData.listMessages!.last.senderID != currentUser.id) {
-        if (messageData.listMessages!.last.isSeen != null &&
-            messageData.listMessages!.last.isSeen!) {
+      if (messageData.listMessages!.last.isDeleted) {
+        return const Text(
+          "A message is unsent",
+          style: TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+        );
+      } else {
+        if (messageData.listMessages!.last.senderID != currentUser.id) {
+          if (messageData.listMessages!.last.isSeen != null &&
+              messageData.listMessages!.last.isSeen!) {
+            if (messageData.listMessages!.last.chatMessageType ==
+                    ChatMessageType.VIDEOCALL ||
+                messageData.listMessages!.last.chatMessageType ==
+                    ChatMessageType.AUDIOCALL) {
+              return const Text(
+                "The call ended",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            } else if (messageData.listMessages!.last.chatMessageType ==
+                ChatMessageType.EMOJI) {
+              return const Text(
+                "An EMOJI is sent",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            } else if (messageData.listMessages!.last.chatMessageType ==
+                ChatMessageType.FILE) {
+              return const Text(
+                "An attachment is sent",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            } else if (messageData.listMessages!.last.chatMessageType ==
+                ChatMessageType.IMAGE) {
+              return const Text(
+                "An image is sent",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            } else if (messageData.listMessages!.last.chatMessageType ==
+                ChatMessageType.AUDIO) {
+              return const Text(
+                "An audio is sent",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            } else if (messageData.listMessages!.last.chatMessageType ==
+                ChatMessageType.VIDEO) {
+              return const Text(
+                "A video is sent",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            } else if (messageData.listMessages!.last.chatMessageType ==
+                ChatMessageType.GIF) {
+              return const Text(
+                "A GIF is sent",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            } else if (messageData.listMessages!.last.chatMessageType ==
+                ChatMessageType.LOCATION) {
+              return const Text(
+                "A Location is sent",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            } else if (messageData.listMessages!.last.chatMessageType ==
+                ChatMessageType.MISSEDAUDIOCALL) {
+              return const Text(
+                "Missed audio call",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            } else if (messageData.listMessages!.last.chatMessageType ==
+                ChatMessageType.MISSEDVIDEOCALL) {
+              return const Text(
+                "Missed video call",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            }
+            return Text(
+              messageData.listMessages!.last.text!,
+              // maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  fontStyle: FontStyle.italic, color: Colors.blue),
+            );
+          } else {
+            if (messageData.listMessages!.last.chatMessageType ==
+                    ChatMessageType.VIDEOCALL ||
+                messageData.listMessages!.last.chatMessageType ==
+                    ChatMessageType.AUDIOCALL) {
+              return const Text(
+                "The call ended",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            } else if (messageData.listMessages!.last.chatMessageType ==
+                ChatMessageType.EMOJI) {
+              return const Text(
+                "An EMOJI is sent",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            } else if (messageData.listMessages!.last.chatMessageType ==
+                ChatMessageType.FILE) {
+              return const Text(
+                "An attachment is sent",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            } else if (messageData.listMessages!.last.chatMessageType ==
+                ChatMessageType.IMAGE) {
+              return const Text(
+                "An image is sent",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            } else if (messageData.listMessages!.last.chatMessageType ==
+                ChatMessageType.AUDIO) {
+              return const Text(
+                "An audio is sent",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            } else if (messageData.listMessages!.last.chatMessageType ==
+                ChatMessageType.VIDEO) {
+              return const Text(
+                "A video is sent",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            } else if (messageData.listMessages!.last.chatMessageType ==
+                ChatMessageType.GIF) {
+              return const Text(
+                "A GIF is sent",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            } else if (messageData.listMessages!.last.chatMessageType ==
+                ChatMessageType.LOCATION) {
+              return const Text(
+                "A Location is sent",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            } else if (messageData.listMessages!.last.chatMessageType ==
+                ChatMessageType.MISSEDAUDIOCALL) {
+              return const Text(
+                "Missed audio call",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            } else if (messageData.listMessages!.last.chatMessageType ==
+                ChatMessageType.MISSEDVIDEOCALL) {
+              return const Text(
+                "Missed video call",
+                style:
+                    TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              );
+            }
+            return Text(
+              messageData.listMessages!.last.text!,
+              // maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  fontStyle: FontStyle.italic, color: Colors.blue),
+            );
+          }
+        } else {
           if (messageData.listMessages!.last.chatMessageType ==
                   ChatMessageType.VIDEOCALL ||
               messageData.listMessages!.last.chatMessageType ==
-                  ChatMessageType.CALL) {
+                  ChatMessageType.AUDIOCALL) {
             return const Text(
               "The call ended",
-              style: TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+              overflow: TextOverflow.ellipsis,
             );
           } else if (messageData.listMessages!.last.chatMessageType ==
               ChatMessageType.EMOJI) {
@@ -117,73 +286,26 @@ class AChat extends StatelessWidget {
               "A Location is sent",
               style: TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
             );
+          } else if (messageData.listMessages!.last.chatMessageType ==
+              ChatMessageType.MISSEDAUDIOCALL) {
+            return const Text(
+              "Unanswerd audio call",
+              style: TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+            );
+          } else if (messageData.listMessages!.last.chatMessageType ==
+              ChatMessageType.MISSEDVIDEOCALL) {
+            return const Text(
+              "Unanswerd video call",
+              style: TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
+            );
           }
-          return Text(
-            messageData.listMessages!.last.text!,
-            // maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-                fontStyle: FontStyle.italic, color: Colors.blue),
-          );
         }
-      }
-      if (messageData.listMessages!.last.chatMessageType ==
-              ChatMessageType.VIDEOCALL ||
-          messageData.listMessages!.last.chatMessageType ==
-              ChatMessageType.CALL) {
-        return const Text(
-          "The call ended",
+        return Text(
+          messageData.listMessages!.last.text!,
+          // maxLines: 2,
           overflow: TextOverflow.ellipsis,
         );
-      } else if (messageData.listMessages!.last.chatMessageType ==
-          ChatMessageType.EMOJI) {
-        return const Text(
-          "An EMOJI is sent",
-          style: TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
-        );
-      } else if (messageData.listMessages!.last.chatMessageType ==
-          ChatMessageType.FILE) {
-        return const Text(
-          "An attachment is sent",
-          style: TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
-        );
-      } else if (messageData.listMessages!.last.chatMessageType ==
-          ChatMessageType.IMAGE) {
-        return const Text(
-          "An image is sent",
-          style: TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
-        );
-      } else if (messageData.listMessages!.last.chatMessageType ==
-          ChatMessageType.AUDIO) {
-        return const Text(
-          "An audio is sent",
-          style: TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
-        );
-      } else if (messageData.listMessages!.last.chatMessageType ==
-          ChatMessageType.VIDEO) {
-        return const Text(
-          "A video is sent",
-          style: TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
-        );
-      } else if (messageData.listMessages!.last.chatMessageType ==
-          ChatMessageType.GIF) {
-        return const Text(
-          "A GIF is sent",
-          style: TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
-        );
-      } else if (messageData.listMessages!.last.chatMessageType ==
-          ChatMessageType.LOCATION) {
-        return const Text(
-          "A Location is sent",
-          style: TextStyle(fontStyle: FontStyle.italic, color: Colors.blue),
-        );
       }
-
-      return Text(
-        messageData.listMessages!.last.text!,
-        // maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      );
     }
   }
 

@@ -88,36 +88,45 @@ class CreateGroup extends StatelessWidget {
             Obx(() {
               User? user = groupController.targetUser.value;
               if (user != null) {
-                return Stack(
-                  alignment: AlignmentDirectional.topEnd,
-                  children: [
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundImage: user.urlImage != null
-                          ? NetworkImage(user.urlImage!)
-                          : const NetworkImage(
-                              "https://t4.ftcdn.net/jpg/03/59/58/91/360_F_359589186_JDLl8dIWoBNf1iqEkHxhUeeOulx0wOC5.jpg"),
-                    ),
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: InkWell(
-                        onTap: () {
-                          groupController.setValueFortargetUser(null);
-                          groupController.setValueForSearchFriend(listFriend);
-                        },
-                        child: Container(
-                          height: 20,
-                          width: 20,
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(100),
-                              color: Colors.white60.withOpacity(0.1)),
-                          child: const Icon(Icons.cancel,
-                              color: Colors.cyanAccent),
+                return FittedBox(
+                  child: Column(children: [
+                    Stack(
+                      alignment: AlignmentDirectional.topEnd,
+                      children: [
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundImage: user.urlImage != null
+                              ? NetworkImage(user.urlImage!)
+                              : const NetworkImage(
+                                  "https://t4.ftcdn.net/jpg/03/59/58/91/360_F_359589186_JDLl8dIWoBNf1iqEkHxhUeeOulx0wOC5.jpg"),
                         ),
-                      ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: InkWell(
+                            onTap: () {
+                              groupController.setValueFortargetUser(null);
+                              groupController
+                                  .setValueForSearchFriend(listFriend);
+                            },
+                            child: Container(
+                              height: 20,
+                              width: 20,
+                              decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(100),
+                                  color: Colors.white60.withOpacity(0.1)),
+                              child: const Icon(Icons.cancel,
+                                  color: Colors.cyanAccent),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                    const SizedBox(
+                      height: 5,
+                    ),
+                    Text(user.name!)
+                  ]),
                 );
               } else {
                 return const SizedBox(

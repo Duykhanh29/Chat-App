@@ -269,8 +269,8 @@ class BodyCard extends StatelessWidget {
     return GestureDetector(
       onLongPress: () {
         if (message.senderID == currentUser.id) {
-          controller.changeIsChoose();
           controller.toggleDeleteID(message.idMessage!);
+          controller.changeIsChoose();
         }
       },
       onTap: () async {

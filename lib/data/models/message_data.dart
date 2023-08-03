@@ -173,10 +173,16 @@ ChatMessageType getChatMessageType(String type) {
     return ChatMessageType.IMAGE;
   } else if (type == "EMOJI") {
     return ChatMessageType.GIF;
-  } else if (type == "CALL") {
-    return ChatMessageType.CALL;
+  } else if (type == "AUDIOCALL") {
+    return ChatMessageType.AUDIOCALL;
   } else if (type == "LOCATION") {
     return ChatMessageType.LOCATION;
+  } else if (type == "NOTIFICATION") {
+    return ChatMessageType.NOTIFICATION;
+  } else if (type == "MISSEDAUDIOCALL") {
+    return ChatMessageType.MISSEDAUDIOCALL;
+  } else if (type == "MISSEDVIDEOCALL") {
+    return ChatMessageType.MISSEDVIDEOCALL;
   }
   return ChatMessageType.VIDEOCALL;
 }
@@ -188,9 +194,11 @@ enum ChatMessageType {
   EMOJI,
   IMAGE,
   VIDEO,
-  CALL,
+  AUDIOCALL,
   VIDEOCALL,
   FILE,
   LOCATION,
-  NOTIFICATION
+  NOTIFICATION,
+  MISSEDVIDEOCALL,
+  MISSEDAUDIOCALL,
 }

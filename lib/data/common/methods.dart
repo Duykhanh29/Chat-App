@@ -269,4 +269,42 @@ class CommonMethods {
         allUser.where((element) => !existedUser!.contains(element.id)).toList();
     return result;
   }
+
+  static bool isIDFromListID(String id, List<String>? list) {
+    for (var element in list!) {
+      if (element == id) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // for merge friend and user on the same group
+  static List<User> mergeList(List<User> listFriend, List<User>? listUser) {
+    List<User> list = List.from(listFriend);
+    for (var element in listUser!) {
+      if (!checkExistInList(list, element)) {
+        list.add(element);
+      }
+    }
+    return list;
+  }
+
+  static bool checkExistInList(List<User> list, User user) {
+    for (var element in list) {
+      if (user.id == element.id) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  static bool checkUserInChats(List<MessageData> list, User user) {
+    for (var element in list) {
+      if (element.receivers!.contains(user.id)) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

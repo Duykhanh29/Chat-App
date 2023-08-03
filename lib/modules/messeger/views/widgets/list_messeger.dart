@@ -100,128 +100,141 @@ class ListMesseger extends GetView<MessageController> {
                         StreamBuilder<List<MessageData>>(
                       stream: controller.updateDisplay(currentUser, searchKey),
                       builder: (context, snapshot) {
-                        if (listMsgData.isEmpty &&
-                            controller.searchListUser.value.isEmpty) {
-                          return Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text("No list chat"),
-                                const SizedBox(
-                                  height: 15,
-                                ),
-                                Center(
-                                  child: Image.asset(
-                                    ImageData.emptyilst,
-                                    width: 100,
-                                    height: 100,
-                                  ),
-                                )
-                              ]);
-                        } else if (listMsgData.isEmpty &&
-                            !controller.searchListUser.value.isEmpty &&
-                            searchKey != "") {
-                          return ListView.separated(
-                              itemBuilder: (context, index) {
-                                return UserCard(
-                                    receiver: controller.searchListUser[index]);
-                              },
-                              separatorBuilder: (context, index) =>
-                                  const Divider(
-                                    color: Colors.black26,
-                                    height: 2,
-                                  ),
-                              itemCount: controller.searchListUser.length);
+                        if (snapshot.connectionState == ConnectionState.none) {
+                          return Container();
+                        } else if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
                         } else {
-                          if (snapshot.data == null || snapshot.data!.isEmpty) {
-                            if (controller.searchListUser.length > 0) {
-                              return ListView.separated(
-                                  itemBuilder: (context, index) {
-                                    return UserCard(
-                                        receiver:
-                                            controller.searchListUser[index]);
-                                  },
-                                  separatorBuilder: (context, index) =>
-                                      const Divider(
-                                        color: Colors.black26,
-                                        height: 2,
-                                      ),
-                                  itemCount: controller.searchListUser.length);
-                            } else {
-                              return Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Text("No list chat"),
-                                    const SizedBox(
-                                      height: 15,
-                                    ),
-                                    Center(
-                                      child: Image.asset(
-                                        ImageData.emptyilst,
-                                        width: 100,
-                                        height: 100,
-                                      ),
-                                    )
-                                  ]);
-                            }
-                          } else {
-                            List<MessageData> listMsgData = snapshot.data!;
-                            return SingleChildScrollView(
-                              child: Column(
+                          if (listMsgData.isEmpty &&
+                              controller.searchListUser.value.isEmpty) {
+                            return Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  ListView.separated(
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      shrinkWrap: true,
-                                      itemBuilder: (context, index) {
-                                        return AChat(
-                                          messageData: controller
-                                                  .getListMessageData(
-                                                      listMsgData)[
-                                              index], // issue at listMsgData
-                                        );
-                                      },
-                                      separatorBuilder: (context, index) =>
-                                          const Divider(
-                                            color: Colors.black26,
-                                            height: 2,
-                                          ),
-                                      itemCount: controller
-                                          .getListMessageData(listMsgData)
-                                          .length),
-                                  if (controller.searchListUser.length > 0) ...{
-                                    SizedBox(
-                                      height: 20,
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        children: const [
-                                          SizedBox(
-                                            width: 20,
-                                          ),
-                                          Text("Users")
-                                        ],
-                                      ),
+                                  const Text("No list chat"),
+                                  const SizedBox(
+                                    height: 15,
+                                  ),
+                                  Center(
+                                    child: Image.asset(
+                                      ImageData.emptyilst,
+                                      width: 100,
+                                      height: 100,
                                     ),
+                                  )
+                                ]);
+                          } else if (listMsgData.isEmpty &&
+                              !controller.searchListUser.value.isEmpty &&
+                              searchKey != "") {
+                            return ListView.separated(
+                                itemBuilder: (context, index) {
+                                  return UserCard(
+                                      receiver:
+                                          controller.searchListUser[index]);
+                                },
+                                separatorBuilder: (context, index) =>
+                                    const Divider(
+                                      color: Colors.black26,
+                                      height: 2,
+                                    ),
+                                itemCount: controller.searchListUser.length);
+                          } else {
+                            if (snapshot.data == null ||
+                                snapshot.data!.isEmpty) {
+                              if (controller.searchListUser.length > 0) {
+                                return ListView.separated(
+                                    itemBuilder: (context, index) {
+                                      return UserCard(
+                                          receiver:
+                                              controller.searchListUser[index]);
+                                    },
+                                    separatorBuilder: (context, index) =>
+                                        const Divider(
+                                          color: Colors.black26,
+                                          height: 2,
+                                        ),
+                                    itemCount:
+                                        controller.searchListUser.length);
+                              } else {
+                                return Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Text("No list chat"),
+                                      const SizedBox(
+                                        height: 15,
+                                      ),
+                                      Center(
+                                        child: Image.asset(
+                                          ImageData.emptyilst,
+                                          width: 100,
+                                          height: 100,
+                                        ),
+                                      )
+                                    ]);
+                              }
+                            } else {
+                              List<MessageData> listMsgData = snapshot.data!;
+                              return SingleChildScrollView(
+                                child: Column(
+                                  children: [
                                     ListView.separated(
                                         physics:
                                             const NeverScrollableScrollPhysics(),
                                         shrinkWrap: true,
                                         itemBuilder: (context, index) {
-                                          return UserCard(
-                                              receiver: controller
-                                                  .searchListUser[index]);
+                                          return AChat(
+                                            messageData: controller
+                                                    .getListMessageData(
+                                                        listMsgData)[
+                                                index], // issue at listMsgData
+                                          );
                                         },
                                         separatorBuilder: (context, index) =>
                                             const Divider(
                                               color: Colors.black26,
                                               height: 2,
                                             ),
-                                        itemCount:
-                                            controller.searchListUser.length)
-                                  }
-                                ],
-                              ),
-                            );
+                                        itemCount: controller
+                                            .getListMessageData(listMsgData)
+                                            .length),
+                                    if (controller.searchListUser.length >
+                                        0) ...{
+                                      SizedBox(
+                                        height: 20,
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                          children: const [
+                                            SizedBox(
+                                              width: 20,
+                                            ),
+                                            Text("Users")
+                                          ],
+                                        ),
+                                      ),
+                                      ListView.separated(
+                                          physics:
+                                              const NeverScrollableScrollPhysics(),
+                                          shrinkWrap: true,
+                                          itemBuilder: (context, index) {
+                                            return UserCard(
+                                                receiver: controller
+                                                    .searchListUser[index]);
+                                          },
+                                          separatorBuilder: (context, index) =>
+                                              const Divider(
+                                                color: Colors.black26,
+                                                height: 2,
+                                              ),
+                                          itemCount:
+                                              controller.searchListUser.length)
+                                    }
+                                  ],
+                                ),
+                              );
+                            }
                           }
                         }
                       },

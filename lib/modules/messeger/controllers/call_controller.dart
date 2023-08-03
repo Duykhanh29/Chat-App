@@ -9,38 +9,29 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:chat_app/utils/settings/settings.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:chat_app/routes/app_routes.dart';
+// import 'package:wakelock/wakelock.dart';
 
-class AudioCallController extends GetxController {
+class CallController extends GetxController {
   final callDB = FirebaseFirestore.instance;
+
   RxList<int> remoteUsers = <int>[].obs;
-  RxList<String> userIDs = <String>[].obs;
-  Rx<int> myRemoteUid = 0.obs;
-  RxString senderID = "".obs;
-  RxBool isMuted = false.obs;
-  RxBool isJoinedSucceed = false.obs;
+  // Rx<int> myremoteUid = 0.obs;
+  // RxBool isGroupCall = false.obs;
   RxBool localUserJoined = false.obs;
-  RxBool isEnded = false.obs;
-  late RtcEngine engine;
+  RxBool muted = false.obs;
+  RxBool switchMainView = false.obs;
+  RxBool mutedVideo = false.obs;
+  RxBool reConnectingRemoteView = false.obs;
+  RxBool isFront = false.obs;
+  RxBool isAudioCall = true.obs;
+  RxBool isLoading = true.obs;
+  RxString senderID = "".obs;
+  late RtcEngine rtcEngine;
   @override
   void onInit() {
     // TODO: implement onInit
     super.onInit();
-    initialize();
-  }
-
-  @override
-  void onClose() {
-    // TODO: implement onClose
-    super.onClose();
-    clear();
-  }
-
-  @override
-  void onReady() {
-    // TODO: implement onReady
-    super.onReady();
+    initilize();
   }
 
   void setSenderID(String id) {
@@ -51,76 +42,140 @@ class AudioCallController extends GetxController {
     senderID.value = "id";
   }
 
-  Future initialize() async {
+  // void changeIsGroup() {
+  //   isGroupCall.value = true;
+  // }
+
+  // void resetIsGroup() {
+  //   isGroupCall.value = false;
+  // }
+
+  void changeIsAudioCall(bool value) {
+    isAudioCall.value = value;
+  }
+
+  void resetIsAudioCall() {
+    isAudioCall.value = false;
+  }
+
+  @override
+  void onClose() {
+    // TODO: implement onClose
+    super.onClose();
+    clear();
+  }
+
+  clear() {
+    rtcEngine.leaveChannel();
+    isFront.value = false;
+    reConnectingRemoteView.value = false;
+    muted.value = false;
+    mutedVideo.value = false;
+    switchMainView.value = false;
+    localUserJoined.value = false;
+    update();
+  }
+
+  Future<void> initilize() async {
     Future.delayed(
       Duration.zero,
       () async {
-        await [Permission.microphone].request();
-        await initializeRtcEngine();
-        addAgoraEventHandlers();
-        await engine.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
-        await engine.joinChannel(
-            token: token,
-            channelId: channelId,
-            uid: 0,
-            options: const ChannelMediaOptions());
+        await _initAgoraRtcEngine();
+        _addAgoraEventHandlers();
+        await rtcEngine.setClientRole(
+            role: ClientRoleType.clientRoleBroadcaster);
+        VideoEncoderConfiguration configuration = VideoEncoderConfiguration();
+        await rtcEngine.setVideoEncoderConfiguration(configuration);
+        await rtcEngine.leaveChannel();
+        await rtcEngine.joinChannel(
+          token: token,
+          channelId: channelId,
+          uid: 0,
+          options: const ChannelMediaOptions(),
+        );
         update();
       },
     );
   }
 
-  void clear() {
-    engine.leaveChannel();
-    isMuted.value = false;
-
-    update();
-  }
-
-  Future initializeRtcEngine() async {
-    engine = createAgoraRtcEngine();
-    await engine.initialize(const RtcEngineContext(
+  Future _initAgoraRtcEngine() async {
+    rtcEngine = createAgoraRtcEngine();
+    await rtcEngine.initialize(const RtcEngineContext(
         appId: appID,
         channelProfile: ChannelProfileType.channelProfileLiveBroadcasting));
-    await engine.enableAudio();
-    await engine.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
+    await rtcEngine.enableVideo();
+    await rtcEngine.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
   }
 
-  void addAgoraEventHandlers() {
-    engine.registerEventHandler(
+  void _addAgoraEventHandlers() {
+    rtcEngine.registerEventHandler(
       RtcEngineEventHandler(
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-          isJoinedSucceed.value = true;
-          print("onJoinChannelSuccess");
-        },
-        onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
           localUserJoined.value = true;
-          print("User: $senderID");
-          remoteUsers.value.add(remoteUid);
           update();
         },
-        onLeaveChannel: (connection, stats) {
-          // if (remoteUsers.value.length == 1) {
-          //   remoteUsers.value.clear();
-          //   isCalled.value = false;
-          //   onCallEnd(); // End the call
-          // }
-          isJoinedSucceed.value = false;
+        onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
+          // localUserJoined.value = true;
+          remoteUsers.value.add(remoteUid);
+          isLoading.value = false;
           update();
         },
         onUserOffline: (RtcConnection connection, int remoteUid,
             UserOfflineReasonType reason) {
-          remoteUsers.value.remove(remoteUid);
-          print("User: $senderID");
+          // if (reason == UserOfflineReasonType.userOfflineDropped) {
+          //   if (localUserJoined.value) {
+          //     remoteUsers.value.removeWhere(
+          //       (element) => element == remoteUid,
+          //     );
+          //     if (remoteUsers.value.length == 1) {
+          //       localUserJoined.value = false;
+          //       remoteUsers.value.clear();
+          //       update();
+          //       onCallEnd();
+          //     }
 
-          if (remoteUsers.value.isEmpty) {
-            remoteUsers.value.clear();
-            isEnded.value = true;
-            localUserJoined.value = false;
+          //     // update();
+          //   } else {
+          //   remoteUsers.value.removeWhere(
+          //     (element) => element == remoteUid,
+          //   );
+          //   // onCallEnd();
+          //   update();
+          //   // }
+          // } else
+          // if (reason == UserOfflineReasonType.userOfflineQuit) {
+          // if (localUserJoined.value) {
+          //   remoteUsers.value.removeWhere(
+          //     (element) => element == remoteUid,
+          //   );
+          //   if (remoteUsers.value.length == 0) {
+          // localUserJoined.value = false;
+          // remoteUsers.value = [];
+          // // update();
+          // onCallEnd();
+          // update();
+          remoteUsers.remove(remoteUid);
+          if (remoteUsers.isEmpty) {
+            remoteUsers.clear();
             onCallEnd();
           }
           update();
-
-          //
+          // }
+          // update();
+          //   } else {
+          //     remoteUsers.value.removeWhere(
+          //       (element) => element == remoteUid,
+          //     );
+          //     // onCallEnd();
+          //     update();
+          //     // }
+          //   }
+          //   //  else {
+          //   //   update();
+          // }
+        },
+        onLeaveChannel: (RtcConnection connection, RtcStats stats) {
+          print("I am leaving");
         },
       ),
     );
@@ -129,34 +184,46 @@ class AudioCallController extends GetxController {
   void onCallEnd() {
     clear();
     update();
+    // if (remoteUsers.value.length < 2) {
     Get.back();
+    // }
+  }
+
+  void onVideoOff() {
+    mutedVideo.value = !mutedVideo.value;
+    rtcEngine.muteLocalVideoStream(mutedVideo.value);
+    update();
   }
 
   void onToggleMute() {
-    isMuted.value = !isMuted.value;
-    engine.muteLocalAudioStream(isMuted.value);
+    muted.value = !muted.value;
+    rtcEngine.muteLocalAudioStream(muted.value);
     update();
+  }
+
+  void onToggleMuteVideo() {
+    mutedVideo.value = !mutedVideo.value;
+    rtcEngine.muteLocalVideoStream(mutedVideo.value);
+    update();
+  }
+
+  void onSwitchCamera() {
+    rtcEngine.switchCamera().then((value) => {}).catchError((err) {});
   }
 
   // database
   Future addCreatorInfor(String msgID, String senderID) async {
     CallData callData = CallData(
-        currentAudience: [senderID],
-        listAudience: [senderID],
-        creatorId: senderID,
         createdAt: Timestamp.now(),
-        idChannel: msgID);
-    final ref = await callDB
-        .collection('audioCalls')
-        .doc(callData.callID)
-        .set(callData.toJson())
-        .whenComplete(() {
-      print("Add success");
-    });
+        creatorId: senderID,
+        currentAudience: [senderID],
+        idChannel: msgID,
+        listAudience: [senderID]);
+    await callDB.collection('videoCalls').doc(msgID).set(callData.toJson());
   }
 
   Future<String?> getCreatorID(String msgID) async {
-    final querySnapshot = callDB.collection('audioCalls');
+    final querySnapshot = callDB.collection('videoCalls');
     final where = querySnapshot.where('idChannel', isEqualTo: msgID);
     final order = where.orderBy('createdAt', descending: true);
     final limit = order.limit(1);
@@ -174,7 +241,7 @@ class AudioCallController extends GetxController {
 
   Future<String?> getCallID(String msgID) async {
     final querySnapshot = await callDB
-        .collection('audioCalls')
+        .collection('videoCalls')
         .where('idChannel', isEqualTo: msgID)
         .orderBy('createdAt', descending: true)
         .limit(1)
@@ -186,7 +253,7 @@ class AudioCallController extends GetxController {
   }
 
   Future<List<String>?> getListAudence(String callID) async {
-    final snapshot = await callDB.collection('audioCalls').doc(callID).get();
+    final snapshot = await callDB.collection('videoCalls').doc(callID).get();
     if (snapshot.exists) {
       final callData = snapshot.data() as Map<String, dynamic>;
       final list = callData['listAudience'] as List<dynamic>;
@@ -196,7 +263,7 @@ class AudioCallController extends GetxController {
   }
 
   Future<List<String>?> getListCurrentAudence(String callID) async {
-    final snapshot = await callDB.collection('audioCalls').doc(callID).get();
+    final snapshot = await callDB.collection('videoCalls').doc(callID).get();
     if (snapshot.exists) {
       final callData = snapshot.data() as Map<String, dynamic>;
       final list = callData['currentAudience'] as List<dynamic>;
@@ -206,7 +273,7 @@ class AudioCallController extends GetxController {
   }
 
   Future joinChannel(String callID, String anAudience) async {
-    DocumentReference docRef = callDB.collection('audioCalls').doc(callID);
+    DocumentReference docRef = callDB.collection('videoCalls').doc(callID);
     DocumentSnapshot snapshot = await docRef.get();
     if (snapshot.exists) {
       final callData = snapshot.data() as Map<String, dynamic>;
@@ -236,7 +303,7 @@ class AudioCallController extends GetxController {
   }
 
   Future leaveChannel(String callID, String anAudience) async {
-    DocumentReference docRef = callDB.collection('audioCalls').doc(callID);
+    DocumentReference docRef = callDB.collection('videoCalls').doc(callID);
     DocumentSnapshot snapshot = await docRef.get();
     if (snapshot.exists) {
       final callData = snapshot.data() as Map<String, dynamic>;
@@ -249,7 +316,7 @@ class AudioCallController extends GetxController {
   }
 
   Stream<int> getNumberOfCurrentAudience(String callID) async* {
-    final ref = callDB.collection('audioCalls').doc(callID);
+    final ref = callDB.collection('videoCalls').doc(callID);
     StreamController<int> controller = StreamController<int>();
     StreamSubscription subscription = ref.snapshots().listen((event) async {
       if (event.exists) {
@@ -267,72 +334,4 @@ class AudioCallController extends GetxController {
     };
     yield* controller.stream;
   }
-
-  // // update audience
-  // Future updateAudience(String msgID, String anAudience) async {
-  //   try {
-  //     final ref = callDB.collection('audioCalls').doc(msgID);
-  //     final snapshot = await ref.get();
-  //     if (snapshot.exists) {
-  //       final callData = snapshot.data() as Map<String, dynamic>;
-  //       final listAUdience = callData['listAudience'] as List<String>;
-  //       if (listAUdience.isNotEmpty) {
-  //         listAUdience.add(anAudience);
-  //       } else {
-  //         listAUdience.add(anAudience);
-  //       }
-  //       final data = {
-  //         'listAudience': listAUdience.map((e) => e.toString()).toList(),
-  //       };
-  //       ref.update(data);
-  //     }
-  //   } catch (e) {
-  //     print("object");
-  //   }
-  // }
-
-  // // leave channel
-  // Future leaveChannelUpdate(
-  //     String msgID, String leaver, String senderID) async {
-  //   try {
-  //     final ref = callDB.collection('audioCalls').doc(msgID);
-  //     final snapshot = await ref.get();
-  //     if (snapshot.exists) {
-  //       final callData = snapshot.data() as Map<String, dynamic>;
-  //       final listAudience = callData['listAudience'] as List<String>;
-  //       listAudience.remove(leaver);
-  //       final data = {
-  //         'listAudience': listAudience.map((e) => e.toString()).toList()
-  //       };
-  //       ref.update(data);
-  //     }
-  //   } catch (e) {
-  //     print("object");
-  //   }
-  // }
-
-  // Future<String?> getCreatorID(String msgID) async {
-  //   try {
-  //     final snapshot = await callDB.collection('audioCalls').doc(msgID).collection(collectionPath);
-  //     if (snapshot.exists) {
-  //       final callData = snapshot.data() as Map<String, dynamic>;
-  //       return (callData['creatorId'] as String);
-  //     }
-  //   } catch (e) {
-  //     print("object");
-  //   }
-  // }
-
-  // Future<int?> getTotalNumberOfMembers(String msgID) async {
-  //   try {
-  //     final snapshot = await callDB.collection('audioCalls').doc(msgID).get();
-  //     if (snapshot.exists) {
-  //       final callData = snapshot.data() as Map<String, dynamic>;
-  //       final listAudience = callData['listAudience'] as List<String>;
-  //       return listAudience.length;
-  //     }
-  //   } catch (e) {
-  //     print("object");
-  //   }
-  // }
 }

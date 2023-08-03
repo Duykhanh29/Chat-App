@@ -58,8 +58,9 @@ class FileMessage extends StatelessWidget {
             GestureDetector(
               onLongPress: () {
                 // if (!message.isSender!) {
-                controller.changeIsChoose();
                 controller.toggleDeleteID(message.idMessage!);
+                controller.changeIsChoose();
+
                 // }
               },
               onTap: () async {

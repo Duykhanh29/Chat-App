@@ -5,7 +5,7 @@ import 'package:chat_app/modules/auth/controllers/auth_controller.dart';
 import 'package:chat_app/modules/friend/views/widgetss/view_profile.dart';
 import 'package:chat_app/modules/home/controllers/data_controller.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
-import 'package:chat_app/modules/messeger/views/widgets/message_tiles/call_message.dart';
+import 'package:chat_app/modules/messeger/views/widgets/message_types/call_message.dart';
 import 'package:chat_app/utils/helpers/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,11 +16,11 @@ import 'package:photo_view/photo_view.dart';
 import 'package:video_player/video_player.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../widgets/message_tiles/audio_message.dart';
-import '../widgets/message_tiles/video_message.dart';
-import '../widgets/message_tiles/image_message.dart';
-import '../widgets/message_tiles/text_message.dart';
-import '../widgets/message_tiles/location_message.dart';
+import 'message_types/audio_message.dart';
+import 'message_types/video_message.dart';
+import 'message_types/image_message.dart';
+import 'message_types/text_message.dart';
+import 'message_types/location_message.dart';
 import 'package:intl/intl.dart';
 import 'package:swipe_to/swipe_to.dart';
 
@@ -144,13 +144,13 @@ class MessageTile extends GetView<MessageController> {
 
   @override
   Widget build(BuildContext context) {
+    Get.lazyPut(() => DataController());
     final controller = Get.find<MessageController>();
     final authController = Get.find<AuthController>();
     final dataController = Get.find<DataController>();
     final listAllUser = dataController.listAllUser.value;
     final currentUser = authController.currentUser.value;
-    final listUser = controller.relatedUserToCurrentUser.value;
-    final sender = CommonMethods.getUserFromID(listAllUser, message.senderID);
+
     return SwipeTo(
       onLeftSwipe: () {},
       onRightSwipe: () {
@@ -187,11 +187,28 @@ class MessageTile extends GetView<MessageController> {
                 onTap: () {
                   // Get.to(ViewProfile(user: ));
                 },
-                child: CircleAvatar(
-                  radius: 15,
-                  backgroundImage: NetworkImage(
-                    sender!.urlImage!,
-                  ),
+                child: Obx(
+                  () {
+                    final listUser = controller.relatedUserToCurrentUser.value;
+                    User? sender;
+                    if (listAllUser != null && listAllUser.isNotEmpty) {
+                      sender = CommonMethods.getUserFromID(
+                          listAllUser, message.senderID);
+                      return CircleAvatar(
+                        radius: 15,
+                        backgroundImage: NetworkImage(
+                          sender!.urlImage!,
+                        ),
+                      );
+                    } else {
+                      return const CircleAvatar(
+                        radius: 15,
+                        backgroundImage: NetworkImage(
+                          "https://t4.ftcdn.net/jpg/03/59/58/91/360_F_359589186_JDLl8dIWoBNf1iqEkHxhUeeOulx0wOC5.jpg",
+                        ),
+                      );
+                    }
+                  },
                 ),
               ),
               const SizedBox(

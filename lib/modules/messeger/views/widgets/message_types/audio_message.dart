@@ -148,8 +148,9 @@ class _AudioMessageState extends State<AudioMessage> {
                   GestureDetector(
                     onLongPress: () {
                       // if (!widget.message.isSender!) {
-                      controller.changeIsChoose();
                       controller.toggleDeleteID(widget.message.idMessage!);
+                      controller.changeIsChoose();
+
                       // }
                     },
                     child: Container(
