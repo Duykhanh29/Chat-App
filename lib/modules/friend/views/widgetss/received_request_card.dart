@@ -1,7 +1,10 @@
+import 'package:chat_app/data/common/methods.dart';
 import 'package:chat_app/modules/auth/controllers/auth_controller.dart';
 import 'package:chat_app/modules/friend/controllers/friend_controller.dart';
 import 'package:chat_app/modules/friend/views/widgetss/view_profile.dart';
 import 'package:chat_app/modules/profile/views/widgets/profile_view.dart';
+import 'package:chat_app/routes/app_routes.dart';
+import 'package:chat_app/service/notification_service.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
 import 'package:flutter/material.dart';
@@ -62,6 +65,13 @@ class ReceivedRequestCard extends StatelessWidget {
                       onTap: () async {
                         await friendController.acceptRequest(
                             currentUser!, user);
+                        String tokens = user.token!;
+                        NotificationService.sendPushMessage(
+                            [tokens],
+                            "${currentUser.name} accepted friend request",
+                            "Friend request",
+                            Paths.FRIENDS,
+                            "");
                       },
                       child: Container(
                           height: 40,

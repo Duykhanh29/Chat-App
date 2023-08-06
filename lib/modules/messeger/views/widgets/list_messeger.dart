@@ -44,7 +44,6 @@ class ListMesseger extends GetView<MessageController> {
                   return Obx(() {
                     // controller.listMessageData.value = listMsgData;
                     // controller.searchListMessageData.value = listMsgData;
-                    print("OBX 1");
                     String searchKey = controller.searchKey.value;
                     int size = controller.searchListMessageData.length;
                     List<User> listUser = [];

@@ -7,6 +7,8 @@ import 'package:chat_app/modules/home/controllers/data_controller.dart';
 import 'package:chat_app/modules/messeger/controllers/group_controller.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
 import 'package:chat_app/modules/messeger/views/widgets/ingroup/add_new_member.dart';
+import 'package:chat_app/routes/app_routes.dart';
+import 'package:chat_app/service/notification_service.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
 import 'package:flutter/material.dart';
@@ -252,6 +254,13 @@ class ListMember extends StatelessWidget {
                                       onTap: () async {
                                         await friendController.addFriend(
                                             currentUser, listUser[index]);
+                                        String tokens = listUser[index].token!;
+                                        NotificationService.sendPushMessage(
+                                            [tokens],
+                                            "${currentUser.name} sent a friend request",
+                                            "Friend request",
+                                            Paths.RECEIVED_FRIEND_REQUEST,
+                                            "");
                                       },
                                       child: const Icon(
                                         Icons.person_add_alt_1,

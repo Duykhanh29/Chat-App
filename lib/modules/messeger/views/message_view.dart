@@ -216,12 +216,14 @@ class MessageView extends GetView<MessageController> {
                                   receivers: list);
                               controller.addNewChat(
                                   newMessageData); // because of this user haven't chatted with me before
-                              Get.to(() => ChattingPage(),
-                                  arguments: newMessageData);
+                              Get.to(
+                                () => ChattingPage(messageData: newMessageData),
+                              );
                             } else {
                               //  messageData.showALlAttribute();
-                              Get.to(() => ChattingPage(),
-                                  arguments: messageData);
+                              Get.to(
+                                () => ChattingPage(messageData: messageData),
+                              );
                             }
                           },
                           child: CircleAvatar(
@@ -249,7 +251,6 @@ class MessageView extends GetView<MessageController> {
                   ),
                   Expanded(
                     child: Obx(() {
-                      print("Render");
                       List<User> list = controller.listAllUser.value;
                       User? currentUser = authController.currentUser.value;
                       // final listUser = CommonMethods.getListUserFromFriends(

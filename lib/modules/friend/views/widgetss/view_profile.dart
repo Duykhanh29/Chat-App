@@ -7,6 +7,8 @@ import 'package:chat_app/modules/friend/controllers/friend_controller.dart';
 import 'package:chat_app/modules/home/controllers/data_controller.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
 import 'package:chat_app/modules/messeger/views/widgets/chatting_page.dart';
+import 'package:chat_app/routes/app_routes.dart';
+import 'package:chat_app/service/notification_service.dart';
 import 'package:chat_app/service/storage_service.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
@@ -251,12 +253,14 @@ class BuildStream extends StatelessWidget {
                                 receivers: list);
                             messageController.addNewChat(
                                 newMessageData); // because of this user haven't chatted with me before
-                            Get.to(() => ChattingPage(),
-                                arguments: newMessageData);
+                            Get.to(
+                              () => ChattingPage(messageData: newMessageData),
+                            );
                           } else {
                             //  messageData.showALlAttribute();
-                            Get.to(() => ChattingPage(),
-                                arguments: messageData);
+                            Get.to(
+                              () => ChattingPage(messageData: messageData),
+                            );
                           }
                         },
                         icon: const Icon(Icons.message_rounded),
@@ -379,6 +383,13 @@ class BuildStream extends StatelessWidget {
             ),
             onPressed: () async {
               await friendController.addFriend(currentUser, user);
+              String tokens = user.token!;
+              NotificationService.sendPushMessage(
+                  [tokens],
+                  "${currentUser!.name} sent a friend request",
+                  "Friend request",
+                  Paths.RECEIVED_FRIEND_REQUEST,
+                  "");
             },
             icon: const Icon(Icons.person_add_alt_1),
             label: const Text("Add friend"),
@@ -412,10 +423,12 @@ class BuildStream extends StatelessWidget {
                       receivers: list);
                   messageController.addNewChat(
                       newMessageData); // because of this user haven't chatted with me before
-                  Get.to(() => ChattingPage(), arguments: newMessageData);
+                  Get.to(() => ChattingPage(messageData: newMessageData));
                 } else {
                   //  messageData.showALlAttribute();
-                  Get.to(() => ChattingPage(), arguments: messageData);
+                  Get.to(() => ChattingPage(
+                        messageData: messageData,
+                      ));
                 }
               },
               icon: const Icon(Icons.message_rounded),
@@ -448,10 +461,12 @@ class BuildStream extends StatelessWidget {
                     receivers: list);
                 messageController.addNewChat(
                     newMessageData); // because of this user haven't chatted with me before
-                Get.to(() => ChattingPage(), arguments: newMessageData);
+                Get.to(() => ChattingPage(messageData: newMessageData));
               } else {
                 //  messageData.showALlAttribute();
-                Get.to(() => ChattingPage(), arguments: messageData);
+                Get.to(() => ChattingPage(
+                      messageData: messageData,
+                    ));
               }
             },
             icon: const Icon(Icons.message_rounded),

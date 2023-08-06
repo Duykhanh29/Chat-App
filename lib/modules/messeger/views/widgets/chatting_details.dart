@@ -345,6 +345,14 @@ class ChattingDetails extends GetView<MessageController> {
                                     messageStatus: MessageStatus.RECEIVED);
                                 messageController.sendAMessage(
                                     msg, messageData);
+
+                                // send notifications
+                                CommonMethods.sendNotifications(
+                                    receivers,
+                                    currentUser,
+                                    receiver,
+                                    messageData,
+                                    "${currentUser.name} changed group photo");
                                 // await authController.updateUserToFirebase(
                                 //     uid: currentUser.id!, urlImage: url);
                                 // await authController.editUser(urlImage: url);
@@ -489,10 +497,10 @@ class ChattingDetails extends GetView<MessageController> {
                             title: const Text("Change group name"),
                             onTap: () {
                               showDialogChangeGroupName(
-                                groupController,
-                                currentUser,
-                                messageController,
-                              );
+                                  groupController: groupController,
+                                  currentUser: currentUser,
+                                  messageController: messageController,
+                                  receivers: receivers);
                             },
                             leading: const Icon(
                               Icons.abc_outlined,
@@ -683,6 +691,13 @@ class ChattingDetails extends GetView<MessageController> {
                                   text: "${currentUser.name} was left",
                                   messageStatus: MessageStatus.RECEIVED);
                               messageController.sendAMessage(msg, messageData);
+                              // send notification to others
+                              CommonMethods.sendNotifications(
+                                  receivers,
+                                  currentUser,
+                                  receiver,
+                                  messageData,
+                                  "${currentUser.name} was left");
                             },
                             onCancel: () {
                               Get.back();
@@ -708,8 +723,11 @@ class ChattingDetails extends GetView<MessageController> {
     );
   }
 
-  void showDialogChangeGroupName(GroupController groupController,
-      User currentUser, MessageController messageController) {
+  void showDialogChangeGroupName(
+      {required GroupController groupController,
+      required User? currentUser,
+      required MessageController? messageController,
+      required List<User>? receivers}) {
     TextEditingController nameController =
         TextEditingController(text: messageData.chatName!);
     Get.defaultDialog(
@@ -724,7 +742,7 @@ class ChattingDetails extends GetView<MessageController> {
         onConfirm: () async {
           await groupController.updateGroupChat(
               messageData: messageData,
-              user: currentUser,
+              user: currentUser!,
               groupName: nameController.text);
           Future.delayed(const Duration(seconds: 15));
           Get.back();
@@ -736,7 +754,10 @@ class ChattingDetails extends GetView<MessageController> {
               idMessage: Uuid().v4(),
               text: "${currentUser.name} changed group name",
               messageStatus: MessageStatus.RECEIVED);
-          messageController.sendAMessage(msg, messageData);
+          messageController!.sendAMessage(msg, messageData);
+          // send notification to others
+          CommonMethods.sendNotifications(receivers, currentUser, null,
+              messageData, "${currentUser.name} changed group name");
         },
         onCancel: () {
           Get.back();

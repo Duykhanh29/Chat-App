@@ -47,6 +47,6 @@ class AppPages {
       name: Paths.HOME,
       page: () => const Home(),
     ),
-    GetPage(name: Paths.CHATTINGPAGE, page: () => ChattingPage()),
+    // GetPage(name: Paths.CHATTINGPAGE, page: () => ChattingPage()),
   ];
 }

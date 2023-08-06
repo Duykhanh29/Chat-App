@@ -14,6 +14,7 @@ class Paths {
   static const AUTH = '/auth';
   static const HOME = '/home';
   static const CHATTINGPAGE = '/chatting_page';
+  static const RECEIVED_FRIEND_REQUEST = '/received_friend_request';
   // Getter cho tên màn hình CHATTINGPAGE
   static String get chattingPage => CHATTINGPAGE;
 }

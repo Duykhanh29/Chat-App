@@ -5,6 +5,7 @@ import 'package:chat_app/modules/home/views/main_view.dart';
 import 'package:chat_app/modules/messeger/bindings/message_binding.dart';
 import 'package:chat_app/modules/widgets/splash.dart';
 import 'package:chat_app/routes/app_page.dart';
+import 'package:chat_app/service/notification_service.dart';
 import 'package:chat_app/utils/constants/constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -39,7 +40,6 @@ void main() async {
       // options: DefaultFirebaseOptions.currentPlatform,
       );
 
-  // if()
   FirebaseMessaging messaging = FirebaseMessaging.instance;
 
   // this is used for IOS devices
@@ -55,12 +55,38 @@ void main() async {
 
   final fcmToken = await FirebaseMessaging.instance.getToken();
   print("Token: $fcmToken");
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-  // AndroidNotificationChannel androidNotificationChannel=AndroidNotificationChannel("high_importance_channel", name)
-  //.then((value) => Get.put(AuthController()));
-  // Get.put(AuthController());
+
   FirebaseMessaging.onBackgroundMessage(backgroundhandler);
+
+  // // Tẻminated state
+  // FirebaseMessaging.instance.getInitialMessage().then((value) {
+  //   if (value != null && value.notification != null) {
+  //     print("This message is coming from ternimated");
+  //     print(value.notification!.body);
+  //     print(value.notification!.title);
+  //   }
+  // });
+
+  // // Foreground State
+  // NotificationService.initialize();
+  // FirebaseMessaging.onMessage.listen((event) async {
+  //   if (event.notification != null) {
+  //     print("This message is coming from Foreground");
+  //     print(event.notification!.body);
+  //     print(event.notification!.title);
+  //     await NotificationService.display(event);
+  //   }
+  // });
+
+  // // background State
+  // FirebaseMessaging.onMessageOpenedApp.listen((event) {
+  //   if (event.notification != null) {
+  //     print("This message is coming from background");
+  //     print(event.notification!.body);
+  //     print(event.notification!.title);
+  //   }
+  // });
+
   Get.lazyPut(
     () => AuthController(),
   );
@@ -89,46 +115,8 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class Home extends StatefulWidget {
+class Home extends StatelessWidget {
   const Home({super.key});
-
-  @override
-  State<Home> createState() => _HomeState();
-}
-
-class _HomeState extends State<Home> {
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-
-    // ternimated State
-    // FirebaseMessaging.instance.getInitialMessage().then((value) {
-    //   if (value!.notification != null) {
-    //     print("This message is coming from ternimated");
-    //     print(value.notification!.body);
-    //     print(value.notification!.title);
-    //   }
-    // });
-
-    // Foreground State
-    FirebaseMessaging.onMessage.listen((event) {
-      if (event.notification != null) {
-        print("This message is coming from Foreground");
-        print(event.notification!.body);
-        print(event.notification!.title);
-      }
-    });
-
-    // background State
-    FirebaseMessaging.onMessageOpenedApp.listen((event) {
-      if (event.notification != null) {
-        print("This message is coming from background");
-        print(event.notification!.body);
-        print(event.notification!.title);
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {

@@ -7,6 +7,7 @@ class User {
   String? urlImage;
   UserStatus? userStatus;
   String? urlCoverImage;
+  String? token;
   User(
       {this.id,
       this.name,
@@ -15,9 +16,11 @@ class User {
       this.userStatus,
       this.email,
       this.phoneNumber,
+      this.token,
       this.urlCoverImage});
 
   Map<String, dynamic> toJson() => {
+        "token": token,
         "name": name,
         "urlImage": urlImage,
         "email": email,
@@ -29,6 +32,7 @@ class User {
       };
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
+        token: json['token'],
         id: json['id'],
         name: json['name'],
         email: json['email'],

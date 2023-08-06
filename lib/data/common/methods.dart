@@ -1,8 +1,11 @@
 import 'package:chat_app/data/models/friend.dart';
 import 'package:chat_app/data/models/message_data.dart';
 import 'package:chat_app/data/models/user.dart';
+import 'package:chat_app/routes/app_routes.dart';
+import 'package:chat_app/service/notification_service.dart';
 import 'package:chat_app/service/services_method.dart';
 import 'package:chat_app/utils/helpers/validators.dart';
+import 'package:intl/intl.dart';
 
 class CommonMethods {
   CommonMethods();
@@ -306,5 +309,65 @@ class CommonMethods {
       }
     }
     return false;
+  }
+
+  // for groupHeaderBuilder in chatting page
+  static String showHeaderTime(DateTime dateTime) {
+    if (Validators.compareDate(dateTime)) {
+      if (Validators.compareHour(dateTime)) {
+        return DateFormat.Hm().format(dateTime);
+      } else {
+        return "Today";
+      }
+    } else if (Validators.isSameWeek(DateTime.now(), dateTime)) {
+      return DateFormat.EEEE().format(dateTime);
+    } else {
+      return DateFormat.yMd().format(dateTime);
+    }
+  }
+
+  static List<String>? getTokens(List<User>? listUser) {
+    List<String>? list = [];
+    for (var element in listUser!) {
+      if (element.token != null) {
+        list.add(element.token!);
+      }
+    }
+    return list;
+  }
+
+  static List<User>? getReceiversExceptCurrentUser(
+      List<User>? list, User? currentUser) {
+    List<User>? listReceivers = List.from(list!);
+    listReceivers.removeWhere((element) => element.id == currentUser!.id);
+    return listReceivers;
+  }
+
+  static void sendNotifications(List<User>? receivers, User? currentUser,
+      User? receiver, MessageData? messageData, String body) {
+    // send notifications to others
+    List<String>? tokens = [];
+    List<User>? listReceivers =
+        CommonMethods.getReceiversExceptCurrentUser(receivers, currentUser);
+    if (receiver != null) {
+      if (receiver.id != currentUser!.id) {
+        NotificationService.sendPushMessage([receiver.token!], body,
+            currentUser.name!, Paths.CHATTINGPAGE, messageData!.idMessageData!);
+      }
+    } else {
+      tokens = CommonMethods.getTokens(listReceivers);
+      NotificationService.sendPushMessage(
+          tokens!,
+          body,
+          "${currentUser!.name} sent to ${messageData!.chatName}",
+          Paths.CHATTINGPAGE,
+          messageData.idMessageData!);
+    }
+  }
+
+  static void sendFriendNotification(User? user, String body, String path) {
+    String tokens = user!.token!;
+    NotificationService.sendPushMessage(
+        [tokens], body, "Friend request", path, "");
   }
 }

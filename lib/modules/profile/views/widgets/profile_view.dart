@@ -168,6 +168,8 @@ class _ProfileViewState extends State<ProfileView> {
                               email: authController.emailController.value.text,
                               phone: authController.phoneController.value.text);
                           authController.changeIsUpdateInforToTrue();
+                          // await authController.updateUserToFirebase(
+                          //     uid: currentUser!.id!);
                           await messageController.updateListAllUser();
                           authController.changeIsUpdateInforToTrue();
                           print("Check now which value: \n");

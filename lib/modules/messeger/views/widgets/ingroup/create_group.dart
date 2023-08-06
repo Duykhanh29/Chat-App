@@ -34,6 +34,7 @@ class CreateGroup extends StatelessWidget {
       friends = CommonMethods.getAllNoExistedUserInChatGroup(
           listFriend, <String>[targetUser.id!]);
     }
+
     groupController.setValueForSearchFriend(friends);
     return Scaffold(
       appBar: AppBar(
@@ -170,7 +171,7 @@ class CreateGroup extends StatelessWidget {
                       await groupController.createGroup(messageData);
                       messageController.addNewChat(messageData);
                       Future.delayed(const Duration(seconds: 10));
-                      Get.back();
+
                       groupController.setValueFortargetUser(null);
                       groupController.setValueForSearchFriend(listFriend);
                       groupController.resetInitialMember();
@@ -182,6 +183,24 @@ class CreateGroup extends StatelessWidget {
                           text: "${currentUser.name} created group",
                           messageStatus: MessageStatus.RECEIVED);
                       messageController.sendAMessage(msg, messageData);
+
+                      // send notifications to others
+                      List<User>? listUsers = CommonMethods.getAllUserInChat(
+                          messageData.receivers!,
+                          messageController.listAllUser.value);
+                      User? receiver;
+                      if (CommonMethods.isAGroup(messageData.receivers) ==
+                          false) {
+                        receiver =
+                            CommonMethods.getReceiver(listUsers, currentUser);
+                      }
+                      CommonMethods.sendNotifications(
+                          listUsers,
+                          currentUser,
+                          receiver,
+                          messageData,
+                          "${currentUser.name} created group");
+                      Get.back();
                     }
                   },
                   icon: const Icon(Icons.add),

@@ -22,6 +22,7 @@ class DataController extends GetxController {
         .get()
         .then((value) => value.docs.forEach((element) {
               User user = User(
+                token: element.data()['token'],
                 id: element.data()['id'],
                 name: element.data()['name'],
                 email: element.data()['email'],
@@ -34,8 +35,8 @@ class DataController extends GetxController {
               list.value.add(user);
             }));
 
-    print("stop read");
-    print("Leght: ${list.value.length}");
+    // print("stop read");
+    // print("Leght: ${list.value.length}");
     return list;
   }
 

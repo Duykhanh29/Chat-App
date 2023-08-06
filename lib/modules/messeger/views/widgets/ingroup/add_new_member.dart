@@ -25,7 +25,12 @@ class AddMember extends StatelessWidget {
     final authController = Get.find<AuthController>();
     final currentUser = authController.currentUser.value;
     List<User>? listFriend = friendController.listFriends.value;
-
+    List<User>? receivers = CommonMethods.getAllUserInChat(
+        messageData.receivers!, messageController.listAllUser.value);
+    User? receiver;
+    if (CommonMethods.isAGroup(messageData.receivers) == false) {
+      receiver = CommonMethods.getReceiver(receivers, currentUser);
+    }
     List<User>? friends = listFriend;
     User? targetUser = groupController.targetUser.value;
     if (existedUser != null) {
@@ -146,6 +151,14 @@ class AddMember extends StatelessWidget {
                                 "${user.name} was added by ${currentUser.name}",
                             messageStatus: MessageStatus.RECEIVED);
                         messageController.sendAMessage(msg, messageData);
+
+                        // send to others
+                        CommonMethods.sendNotifications(
+                            receivers,
+                            currentUser,
+                            receiver,
+                            messageData,
+                            "${user.name} was added by ${currentUser.name}");
                       }
                       // if (targetUser != null) {
                       //   await groupController.addAnUserToGroup(

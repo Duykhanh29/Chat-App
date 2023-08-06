@@ -104,15 +104,19 @@ class _ViewMediaLinkState extends State<ViewMediaLink>
         ),
         body: TabBarView(
           controller: tabBarController,
-          children: [
-            ListMedia(),
-            Image.network(
-                "https://firebasestorage.googleapis.com/v0/b/chat-app-9267d.appspot.com/o/images%2Fa1b0bed9-9eef-4532-bc18-fded4fb7fa30%2FCAP2693465301463547545.jpg?alt=media&token=5039eb14-f706-4dbf-9df3-a7097693fded"),
-            ViewLink()
-          ],
+          children: [ListMedia(), const ListFiles(), ViewLink()],
         ),
       ),
     );
+  }
+}
+
+class ListFiles extends StatelessWidget {
+  const ListFiles({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
   }
 }
 
@@ -486,7 +490,7 @@ class _ALinkState extends State<ALink> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.125,
+      height: MediaQuery.of(context).size.height * 0.09,
       child: ListTile(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(15),

@@ -6,6 +6,8 @@ import 'package:chat_app/modules/messeger/controllers/call_controller.dart';
 import 'package:chat_app/modules/messeger/views/widgets/audio_call/call_notification.dart';
 import 'package:chat_app/modules/messeger/views/widgets/audio_call/waiting_call.dart';
 import 'package:chat_app/modules/messeger/views/widgets/components/camera.dart';
+import 'package:chat_app/routes/app_routes.dart';
+import 'package:chat_app/service/notification_service.dart';
 import 'package:chat_app/service/storage_service.dart';
 import 'package:clipboard/clipboard.dart';
 import 'package:chat_app/data/models/message_data.dart';
@@ -38,8 +40,8 @@ import './audio_call/video_call.dart';
 
 class ChattingPage extends GetView<MessageController> {
   var messageController = TextEditingController();
-  ChattingPage({super.key});
-
+  ChattingPage({super.key, required this.messageData});
+  MessageData? messageData;
   //MessageData? messageData;
   final scrollController = ScrollController();
   Storage storage = Storage();
@@ -52,49 +54,49 @@ class ChattingPage extends GetView<MessageController> {
     return "";
   }
 
-  Future downloadAllImages(
-      MessageData messageData, List<User>? receivers, User? currentUser) async {
-    List<Reference> listURL = await storage.downloaddAllImages();
-    for (var data in listURL) {
-      try {
-        var url = await data.getDownloadURL();
-        MessageStatus messageStatus;
-        messageStatus = CommonMethods.getMessageStatus(receivers, currentUser);
-        Message message = Message(
-            text: url,
-            chatMessageType: ChatMessageType.IMAGE,
-            isSeen: false,
-            messageStatus: messageStatus,
-            idMessage: Uuid().v4(),
-            dateTime: Timestamp.now(),
-            senderID: currentUser!.id);
-        message.showALlAttribute();
-        controller.sendAMessage(message, messageData);
-      } catch (e) {
-        print("error is: $e");
-      }
-    }
-  }
+  // Future downloadAllImages(
+  //     MessageData messageData, List<User>? receivers, User? currentUser) async {
+  //   List<Reference> listURL = await storage.downloaddAllImages();
+  //   for (var data in listURL) {
+  //     try {
+  //       var url = await data.getDownloadURL();
+  //       MessageStatus messageStatus;
+  //       messageStatus = CommonMethods.getMessageStatus(receivers, currentUser);
+  //       Message message = Message(
+  //           text: url,
+  //           chatMessageType: ChatMessageType.IMAGE,
+  //           isSeen: false,
+  //           messageStatus: messageStatus,
+  //           idMessage: Uuid().v4(),
+  //           dateTime: Timestamp.now(),
+  //           senderID: currentUser!.id);
+  //       message.showALlAttribute();
+  //       controller.sendAMessage(message, messageData);
+  //     } catch (e) {
+  //       print("error is: $e");
+  //     }
+  //   }
+  // }
 
-  Future downloadAllVideo(
-      MessageData messageData, List<User>? receivers, User? currentUser) async {
-    List<Reference> listURL = await storage.getVideo();
-    for (var element in listURL) {
-      var url = await element.getDownloadURL();
-      MessageStatus messageStatus;
-      messageStatus = CommonMethods.getMessageStatus(receivers, currentUser);
-      Message message = Message(
-          text: url,
-          chatMessageType: ChatMessageType.VIDEO,
-          isSeen: false,
-          messageStatus: messageStatus,
-          dateTime: Timestamp.now(),
-          idMessage: Uuid().v4(),
-          senderID: currentUser!.id);
-      message.showALlAttribute();
-      controller.sendAMessage(message, messageData);
-    }
-  }
+  // Future downloadAllVideo(
+  //     MessageData messageData, List<User>? receivers, User? currentUser) async {
+  //   List<Reference> listURL = await storage.getVideo();
+  //   for (var element in listURL) {
+  //     var url = await element.getDownloadURL();
+  //     MessageStatus messageStatus;
+  //     messageStatus = CommonMethods.getMessageStatus(receivers, currentUser);
+  //     Message message = Message(
+  //         text: url,
+  //         chatMessageType: ChatMessageType.VIDEO,
+  //         isSeen: false,
+  //         messageStatus: messageStatus,
+  //         dateTime: Timestamp.now(),
+  //         idMessage: Uuid().v4(),
+  //         senderID: currentUser!.id);
+  //     // message.showALlAttribute();
+  //     controller.sendAMessage(message, messageData);
+  //   }
+  // }
 
   List<Message>? getListMessages(MessageData? messageData) {
     if (messageData == null) {
@@ -150,6 +152,17 @@ class ChattingPage extends GetView<MessageController> {
                           senderID: currentUser.id,
                         ),
                     arguments: messageData);
+                // send notifications
+                User? receiver;
+                if (CommonMethods.isAGroup(messageData.receivers) == false) {
+                  receiver = CommonMethods.getReceiver(receivers, currentUser);
+                }
+                CommonMethods.sendNotifications(
+                    receivers,
+                    currentUser,
+                    receiver,
+                    messageData,
+                    "${currentUser.name} is calling audio to you");
                 // Get.to(() => Waiting());
               },
               icon: CommonMethods.isOnlineChat(receivers, currentUser) == true
@@ -175,6 +188,16 @@ class ChattingPage extends GetView<MessageController> {
                       messageData: messageData,
                       sender: currentUser,
                     ));
+                User? receiver;
+                if (CommonMethods.isAGroup(messageData.receivers) == false) {
+                  receiver = CommonMethods.getReceiver(receivers, currentUser);
+                }
+                CommonMethods.sendNotifications(
+                    receivers,
+                    currentUser,
+                    receiver,
+                    messageData,
+                    "${currentUser.name} is calling video to you");
               },
               icon: CommonMethods.isOnlineChat(receivers, currentUser) == true
                   ? const Icon(
@@ -215,6 +238,18 @@ class ChattingPage extends GetView<MessageController> {
                                 messageData: messageData,
                                 senderID: currentUser.id,
                               ));
+                          User? receiver;
+                          if (CommonMethods.isAGroup(messageData.receivers) ==
+                              false) {
+                            receiver = CommonMethods.getReceiver(
+                                receivers, currentUser);
+                          }
+                          CommonMethods.sendNotifications(
+                              receivers,
+                              currentUser,
+                              receiver,
+                              messageData,
+                              "${currentUser.name} is calling audio to you");
                           // Get.to(() => Waiting());
                         },
                         icon: CommonMethods.isOnlineChat(
@@ -262,6 +297,18 @@ class ChattingPage extends GetView<MessageController> {
                               messageData: messageData,
                               sender: currentUser,
                             ));
+                        User? receiver;
+                        if (CommonMethods.isAGroup(messageData.receivers) ==
+                            false) {
+                          receiver =
+                              CommonMethods.getReceiver(receivers, currentUser);
+                        }
+                        CommonMethods.sendNotifications(
+                            receivers,
+                            currentUser,
+                            receiver,
+                            messageData,
+                            "${currentUser.name} is calling video to you");
                       },
                       icon:
                           CommonMethods.isOnlineChat(receivers, currentUser) ==
@@ -304,15 +351,15 @@ class ChattingPage extends GetView<MessageController> {
     final controller = Get.find<MessageController>();
     final authController = Get.find<AuthController>();
     final friendController = Get.find<FriendController>();
-    MessageData? messageData = Get.arguments;
+    // MessageData? messageData = Get.arguments;
     // List<Message>? list = getListMessages(messageData);
-    print("SHow all attributes: \n");
-    messageData!.showALlAttribute();
+    // print("SHow all attributes: \n");
+    // messageData!.showALlAttribute();
     User? receiver;
     User? currentUser = authController.currentUser.value!;
     List<User>? receivers = CommonMethods.getAllUserInChat(
-        messageData.receivers!, controller.listAllUser.value);
-    if (CommonMethods.isAGroup(messageData.receivers) == false) {
+        messageData!.receivers!, controller.listAllUser.value);
+    if (CommonMethods.isAGroup(messageData!.receivers) == false) {
       receiver = CommonMethods.getReceiver(receivers, currentUser);
     }
     MessageData? msgData = messageData;
@@ -326,7 +373,7 @@ class ChattingPage extends GetView<MessageController> {
 
               // to find a receiver
               var data = controller.listMessageData.firstWhere(
-                  (data) => data.idMessageData == messageData.idMessageData);
+                  (data) => data.idMessageData == messageData!.idMessageData);
               final messageList = data.listMessages!.reversed.toList();
               if (messageList.isEmpty) {
                 controller.deleteAChat(messageData);
@@ -334,7 +381,7 @@ class ChattingPage extends GetView<MessageController> {
               if (controller.isSearch.value) {
                 controller.cancelSearch();
                 controller.stopSearch(
-                    controller.searchController.text, messageData);
+                    controller.searchController.text, messageData!);
               }
               if (controller.isRecorder.value) {
                 controller.changeRecorder();
@@ -348,15 +395,16 @@ class ChattingPage extends GetView<MessageController> {
             },
             icon: const Icon(Icons.arrow_back_ios)),
         title: Obx(() => controller.isSearch.value
-            ? displaySearch(controller, messageData)
+            ? displaySearch(controller, messageData!)
             : TitleWidget(
                 friends: friends,
                 controller: controller,
-                messageData: messageData,
+                messageData: messageData!,
                 receiver: receiver,
                 userStatus:
                     receiver == null ? null : userStatus(receiver.userStatus))),
-        actions: actions(messageData, receivers, currentUser, friendController),
+        actions:
+            actions(messageData!, receivers, currentUser, friendController),
       ),
       body: Obx(
         () {
@@ -366,7 +414,7 @@ class ChattingPage extends GetView<MessageController> {
             );
           }
           var data = controller.listMessageData.firstWhere(
-              (data) => data.idMessageData == messageData.idMessageData);
+              (data) => data.idMessageData == messageData!.idMessageData);
           final messageList = data.listMessages!.reversed.toList();
           return Column(
             mainAxisAlignment: messageList.isEmpty
@@ -422,7 +470,7 @@ class ChattingPage extends GetView<MessageController> {
                     }
                   }
                 },
-                stream: controller.getMesgData(messageData),
+                stream: controller.getMesgData(messageData!),
               ),
               // ),
               Padding(
@@ -438,7 +486,7 @@ class ChattingPage extends GetView<MessageController> {
                         controller: controller,
                         currentUser: currentUser,
                         messageController: messageController,
-                        messageData: messageData,
+                        messageData: messageData!,
                         receiver: receiver,
                         receivers: receivers,
                         storage: storage)),
@@ -469,9 +517,9 @@ class OldConversation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final messageList = messageData!.listMessages!.reversed.toList();
-    print("Show all attributes of all messages in a chat\n");
+    // print("Show all attributes of all messages in a chat\n");
     for (var element in messageList) {
-      element.showALlAttribute();
+      // element.showALlAttribute();
     }
     return Expanded(
       child: Theme(
@@ -509,37 +557,14 @@ class OldConversation extends StatelessWidget {
                 itemComparator: (message1, message2) =>
                     message1.dateTime!.compareTo(message2.dateTime!),
                 groupHeaderBuilder: (message) => SizedBox(
-                  height: 30,
+                  height: 35,
                   child: Center(
                     child: Card(
                       color: Colors.blueGrey,
                       child: Padding(
-                        padding: const EdgeInsets.all(5),
-                        child: Validators.compareDate(
-                                message.dateTime!.toDate())
-                            ? Validators.compareHour(message.dateTime!.toDate())
-                                ? Text(
-                                    DateFormat.Hm()
-                                        .format(message.dateTime!.toDate()),
-                                    style: const TextStyle(fontSize: 12),
-                                  )
-                                : Validators.compareHour(
-                                        message.dateTime!.toDate())
-                                    ? const Text(
-                                        "Today",
-                                        style: TextStyle(fontSize: 12),
-                                      )
-                                    : Text(
-                                        DateFormat.EEEE()
-                                            .format(message.dateTime!.toDate()),
-                                        style: const TextStyle(fontSize: 12),
-                                      )
-                            : Text(
-                                DateFormat.EEEE()
-                                    .format(message.dateTime!.toDate()),
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                      ),
+                          padding: const EdgeInsets.all(5),
+                          child: Text(CommonMethods.showHeaderTime(
+                              message.dateTime!.toDate()))),
                     ),
                   ),
                 ),
@@ -633,8 +658,13 @@ class NewConversation extends StatelessWidget {
                     idMessage: Uuid().v4(),
                     dateTime: Timestamp.now(),
                     senderID: currentUser!.id);
-                message.showALlAttribute();
+                // message.showALlAttribute();
                 controller.sendAMessage(message, messageData!);
+
+                // send notifications to others
+
+                CommonMethods.sendNotifications(
+                    receivers, currentUser, receiver, messageData, "hello");
               },
               child: const Icon(
                 Icons.waving_hand_rounded,
@@ -681,7 +711,7 @@ class Inputer extends StatefulWidget {
 
 class _InputerState extends State<Inputer> {
   void _showPicker(context, MessageData messageData, List<User>? receivers,
-      User? currentUser) {
+      User? currentUser, User? receiver) {
     showModalBottomSheet(
         context: context,
         builder: (_) {
@@ -729,8 +759,16 @@ class _InputerState extends State<Inputer> {
                           idMessage: Uuid().v4(),
                           dateTime: Timestamp.now(),
                           senderID: currentUser!.id);
-                      message.showALlAttribute();
+                      // message.showALlAttribute();
                       widget.controller.sendAMessage(message, messageData);
+                      // sendNotifications
+                      if (type == 'audios') {
+                        CommonMethods.sendNotifications(receivers, currentUser,
+                            receiver, messageData, "An audio is sent");
+                      } else {
+                        CommonMethods.sendNotifications(receivers, currentUser,
+                            receiver, messageData, "An image is sent");
+                      }
                     } else {
                       print("Nothing happend");
                     }
@@ -864,8 +902,12 @@ class _InputerState extends State<Inputer> {
                                   icon: const Icon(Icons.more_horiz_outlined)),
                               prefixIcon: IconButton(
                                 onPressed: () async {
-                                  _showPicker(context, widget.messageData,
-                                      widget.receivers, widget.currentUser);
+                                  _showPicker(
+                                      context,
+                                      widget.messageData,
+                                      widget.receivers,
+                                      widget.currentUser,
+                                      widget.receiver);
                                 },
                                 icon: const Icon(Icons.photo),
                               ),
@@ -898,7 +940,7 @@ class _InputerState extends State<Inputer> {
                         dateTime: Timestamp.now(),
                         senderID: widget.currentUser!.id);
                     widget.controller.changeRecorder();
-                    print("Recorder");
+                    // print("Recorder");
                   } else {
                     if (widget.messageController.text != "" &&
                         widget.messageController.text != null) {
@@ -915,8 +957,8 @@ class _InputerState extends State<Inputer> {
                             isReply: true,
                             idReplyText:
                                 widget.controller.replyMessage!.idMessage);
-                        print("Reply");
-                        message.showALlAttribute();
+                        // print("Reply");
+                        // message.showALlAttribute();
                         widget.controller.changeisReply();
                         widget.controller.resetReplyMessage();
                       } else {
@@ -936,8 +978,15 @@ class _InputerState extends State<Inputer> {
                   }
                   if (isSend) {
                     message.showALlAttribute();
-                    print("ID in ms data: ${widget.messageData.idMessageData}");
+                    // print("ID in ms data: ${widget.messageData.idMessageData}");
                     widget.controller.sendAMessage(message, widget.messageData);
+                    // send notification to others
+                    CommonMethods.sendNotifications(
+                        widget.receivers,
+                        widget.currentUser,
+                        widget.receiver,
+                        widget.messageData,
+                        widget.messageController.text);
                     widget.messageController.text = "";
                   }
                 },
@@ -1009,6 +1058,13 @@ class _InputerState extends State<Inputer> {
                               senderID: widget.currentUser!.id);
                           widget.controller
                               .sendAMessage(message, widget.messageData);
+                          // send notification
+                          CommonMethods.sendNotifications(
+                              widget.receivers,
+                              widget.currentUser,
+                              widget.receiver,
+                              widget.messageData,
+                              'Location is sent');
                           widget.controller.changeIsMore();
                         },
                         child: Container(

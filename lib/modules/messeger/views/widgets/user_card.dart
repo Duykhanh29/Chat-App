@@ -7,6 +7,8 @@ import 'package:chat_app/modules/friend/controllers/friend_controller.dart';
 import 'package:chat_app/modules/home/controllers/data_controller.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
 import 'package:chat_app/modules/messeger/views/widgets/chatting_page.dart';
+import 'package:chat_app/routes/app_routes.dart';
+import 'package:chat_app/service/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
@@ -44,7 +46,9 @@ class UserCard extends GetView<MessageController> {
                 receivers: [currentUser.id!, receiver.id!]);
             controller.addNewChat(
                 newMessageData); // because of this user haven't chatted with me before
-            Get.to(() => ChattingPage(), arguments: newMessageData);
+            Get.to(() => ChattingPage(
+                  messageData: newMessageData,
+                ));
           },
           leading: CircleAvatar(
             backgroundImage: NetworkImage(receiver.urlImage!),
@@ -124,6 +128,13 @@ class UserCard extends GetView<MessageController> {
                         onTap: () async {
                           await friendController.acceptRequest(
                               currentUser, receiver);
+                          String tokens = receiver.token!;
+                          NotificationService.sendPushMessage(
+                              [tokens],
+                              "${currentUser.name} accepted friend request",
+                              "Friend request",
+                              Paths.FRIENDS,
+                              "");
                         },
                         child: Container(
                             height: 40,
@@ -164,6 +175,13 @@ class UserCard extends GetView<MessageController> {
                 child: InkWell(
                   onTap: () async {
                     await friendController.addFriend(currentUser, receiver);
+                    String tokens = receiver.token!;
+                    NotificationService.sendPushMessage(
+                        [tokens],
+                        "${currentUser.name} sent a friend request",
+                        "Friend request",
+                        Paths.RECEIVED_FRIEND_REQUEST,
+                        "");
                   },
                   child: const Icon(Icons.person_add_alt_1),
                 ),

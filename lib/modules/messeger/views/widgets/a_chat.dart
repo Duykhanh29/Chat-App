@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:chat_app/data/common/methods.dart';
+import 'package:chat_app/utils/helpers/validators.dart';
 
 class AChat extends StatelessWidget {
   MessageData messageData;
@@ -16,8 +17,10 @@ class AChat extends StatelessWidget {
       return Text(DateFormat.jm().format(dateTime));
     } else if (dateTime.day.compareTo(DateTime.now().day - 1) == 0) {
       return const Text("Yesterday");
+    } else if (Validators.isSameWeek(DateTime.now(), dateTime)) {
+      return Text(DateFormat.EEEE().format(dateTime));
     }
-    return Text(DateFormat.EEEE().format(dateTime));
+    return Text(DateFormat.yMd().format(dateTime));
   }
 
   Widget showState(MessageData messageData, User currentUser) {
@@ -327,7 +330,7 @@ class AChat extends StatelessWidget {
     if (CommonMethods.isAGroup(messageData.receivers) == false) {
       receiver = CommonMethods.getReceiver(receivers, currentUser);
     }
-    print("Chat index ID: ${messageData.idMessageData}");
+    // print("Chat index ID: ${messageData.idMessageData}");
     final msg = FirebaseFirestore.instance
         .collection('messageDatas')
         .doc(messageData.idMessageData);
@@ -376,8 +379,12 @@ class AChat extends StatelessWidget {
               return ListTile(
                 isThreeLine: false,
                 onTap: () {
-                  print("Check id of MSDATA: ${messageData.idMessageData}");
-                  Get.to(() => ChattingPage(), arguments: messageData);
+                  // print("Check id of MSDATA: ${messageData.idMessageData}");
+                  Get.to(
+                    () => ChattingPage(
+                      messageData: messageData,
+                    ),
+                  );
                 },
                 leading: Stack(
                   alignment: Alignment.center,

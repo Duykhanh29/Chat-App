@@ -36,7 +36,7 @@ class FriendView extends GetView<FriendController> {
     final controller = Get.find<FriendController>();
     final msgController = Get.find<MessageController>();
     final authController = Get.find<AuthController>();
-    User? currentUser = authController.currentUser.value;
+
     final msgData = FirebaseFirestore.instance
         .collection('messageDatas')
         .doc('a3364063-7f2a-403e-b4b2-23f41296cc12');
@@ -57,7 +57,12 @@ class FriendView extends GetView<FriendController> {
               height: 3,
               color: Color.fromARGB(255, 157, 161, 163),
             ),
-            ListFriend(currentUser: currentUser)
+            Obx(
+              () {
+                User? currentUser = authController.currentUser.value;
+                return ListFriend(currentUser: currentUser);
+              },
+            )
           ],
         ),
       ),

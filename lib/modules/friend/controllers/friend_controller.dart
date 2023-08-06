@@ -50,6 +50,7 @@ class FriendController extends GetxController {
     for (var element in snapshot.docs) {
       if (id == element.id) {
         user = User(
+          token: element.data()['token'],
           id: element.data()['id'],
           name: element.data()['name'],
           email: element.data()['email'],

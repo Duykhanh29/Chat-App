@@ -148,7 +148,6 @@ class AuthController extends GetxController {
       currentUser.value!.urlCoverImage =
           "https://wallpaperaccess.com/full/393735.jpg";
     }
-
     currentUser.value!.showALlAttribute();
     updateTextController(currentUser);
   }
@@ -624,6 +623,7 @@ class AuthController extends GetxController {
         .get()
         .then((value) => value.docs.forEach((element) {
               userModel.User user = userModel.User(
+                token: element.data()['token'],
                 id: element.data()['id'],
                 name: element.data()['name'],
                 email: element.data()['email'],
@@ -648,6 +648,7 @@ class AuthController extends GetxController {
       List<userModel.User> list = [];
       firebaseFirestore.docs.forEach((element) {
         userModel.User modelUser = userModel.User(
+          token: element.data()['token'],
           id: element.data()['id'],
           name: element.data()['name'],
           email: element.data()['email'],
@@ -711,6 +712,7 @@ class AuthController extends GetxController {
       String? phone,
       String? name,
       String? urlImage,
+      String? token,
       required String uid,
       String? urlCoverImage}) async {
     String? newEmail = email ?? currentUser.value!.email;
@@ -718,12 +720,14 @@ class AuthController extends GetxController {
     String? displayName = name ?? currentUser.value!.name;
     String? urlPhoto = urlImage ?? currentUser.value!.urlImage;
     String? coverImage = urlCoverImage ?? currentUser.value!.urlCoverImage;
+    String? fcmToken = token ?? currentUser.value!.token;
     await FirebaseFirestore.instance.collection('users').doc(uid).update({
       "name": displayName,
       "email": newEmail,
       "phoneNumber": phoneNumber,
       "urlImage": urlPhoto,
       "urlCoverImage": coverImage,
+      "token": fcmToken
     }).whenComplete(() async {
       await editUser(
           email: newEmail,
@@ -762,5 +766,11 @@ class AuthController extends GetxController {
     } catch (e) {
       print(e);
     }
+  }
+
+  Future setToken(String token, String uid) async {
+    final docRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final data = {'token': token};
+    await docRef.update(data);
   }
 }

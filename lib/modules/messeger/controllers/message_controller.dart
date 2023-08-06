@@ -492,8 +492,8 @@ class MessageController extends GetxController {
               list.value.add(user);
             }));
 
-    print("stop read");
-    print("Leght: ${list.value.length}");
+    // print("stop read");
+    // print("Leght: ${list.value.length}");
     return list;
   }
 
@@ -510,7 +510,7 @@ class MessageController extends GetxController {
 
       final chatName = element.data()['chatName'];
       final idMessageData = element.data()['idMessageData'];
-      print("ID mEssageData value: $idMessageData");
+      // print("ID mEssageData value: $idMessageData");
       final groupImage = element.data()['groupImage'];
       final isVlid =
           CommonMethods.isContainUserInAList(currentUser!, receivers);
@@ -574,12 +574,12 @@ class MessageController extends GetxController {
 
     // TODO: implement onInit
     super.onInit();
-    print("On inut");
+    // print("On inut");
     User? currentUser = authController.currentUser.value;
     //if (authController.isLogin.value == true) {
-    print("First check user: \n");
+    // print("First check user: \n");
     if (currentUser != null) {
-      currentUser.showALlAttribute();
+      // currentUser.showALlAttribute();
       listUser.value =
           await getListUserInDB(); // this listUser isn's used in filter function. It is unneccesary
       listAllUser.value = await getListUserInDB();
@@ -598,7 +598,7 @@ class MessageController extends GetxController {
 
   @override
   void onReady() {
-    print("on Ready");
+    // print("on Ready");
     super.onReady();
   }
 
@@ -681,7 +681,7 @@ class MessageController extends GetxController {
 
           // DateTime serverTime = await ServerData.getServerTime();
 
-          message.showALlAttribute();
+          // message.showALlAttribute();
           // update to firebase
           MessageData newMessageData = MessageData(
               // sender: messageData.sender,
@@ -778,7 +778,7 @@ class MessageController extends GetxController {
     );
     print("Print list to check/n");
     for (var element in list) {
-      element.showALlAttribute();
+      // element.showALlAttribute();
     }
     return list;
   }
