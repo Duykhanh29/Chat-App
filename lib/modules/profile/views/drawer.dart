@@ -1,7 +1,10 @@
 import 'package:chat_app/data/models/user.dart';
 import 'package:chat_app/modules/auth/controllers/auth_controller.dart';
+import 'package:chat_app/modules/profile/controllers/profile_controller.dart';
 import 'package:chat_app/modules/profile/views/widgets/profile_view.dart';
 import 'package:chat_app/modules/profile/views/widgets/settings.dart';
+import 'package:chat_app/utils/helpers/dialog.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
@@ -13,6 +16,7 @@ class MyDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authController = Get.find<AuthController>();
+    final profileController = Get.find<ProfileController>();
     final User currentUser = authController.currentUser.value!;
     return Drawer(
       width: 280,
@@ -64,7 +68,40 @@ class MyDrawer extends StatelessWidget {
               style: TextStyle(color: Colors.red),
             ),
             onTap: () async {
-              await authController.signOut();
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return CupertinoAlertDialog(
+                    title: const Text("Log out"),
+                    content: SingleChildScrollView(
+                      child: ListBody(
+                        children: const [
+                          Text("Are you sure want to log out?"),
+                        ],
+                      ),
+                    ),
+                    actions: <Widget>[
+                      TextButton(
+                        child: const Text('No'),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                      TextButton(
+                        child: const Text('Yes'),
+                        onPressed: () async {
+                          await authController.signOut();
+                        },
+                      ),
+                    ],
+                  );
+                },
+              );
+              // Dialogs.displayDialog(
+              //     context,
+              //     "Log out",
+              //     "Are you sure want to log out?",
+              //     );
             },
           ),
         ],

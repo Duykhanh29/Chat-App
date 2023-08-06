@@ -1,7 +1,8 @@
 import 'package:chat_app/modules/auth/controllers/auth_controller.dart';
+import 'package:chat_app/modules/home/views/main_view.dart';
 
 import '../startPage.dart';
-import 'package:chat_app/modules/group/views/group_view.dart';
+import 'package:chat_app/modules/friend/views/friend_view.dart';
 import 'package:chat_app/modules/messeger/views/message_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/framework.dart';
@@ -34,7 +35,7 @@ class _RegisterState extends State<Register> {
     try {
       await AuthService().createUserWithEmailAndPassword(
           email: emailController.text, password: passwordController.text);
-      Get.to(() => GroupView());
+      Get.to(() => MainView());
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
         print('The password provided is too weak.');
@@ -209,8 +210,8 @@ class _RegisterState extends State<Register> {
                     var isValid = formKey.currentState!.validate();
                     if (isValid) {
                       await controller.createUserWithEmailAndPassword(
-                          email: emailController.text,
-                          password: passwordController.text);
+                          email: emailController.text.trim(),
+                          password: passwordController.text.trim());
                     }
                   },
                   child: const Text("Sign up",

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:chat_app/data/models/user.dart';
 import 'package:chat_app/data/models/message_data.dart';
 import 'package:get/get.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CameraViewPage extends StatelessWidget {
   CameraViewPage(
@@ -99,19 +100,19 @@ class CameraViewPage extends StatelessWidget {
                           backgroundColor: Colors.tealAccent[700],
                           child: IconButton(
                               onPressed: () async {
-                                await storage.uploadFile(
-                                    path, fileName, messageData.idMessageData!);
-                                String url = await storage.downloadURL(
-                                    fileName, messageData.idMessageData!);
+                                await storage.uploadFile(path, fileName,
+                                    messageData.idMessageData!, 'images');
+                                String url = await storage.downloadURL(fileName,
+                                    messageData.idMessageData!, 'images');
                                 Message message = Message(
                                     text: url,
                                     chatMessageType: ChatMessageType.IMAGE,
                                     isSeen: false,
                                     messageStatus: messageStatus,
-                                    dateTime: DateTime.now(),
-                                    sender: sender);
+                                    dateTime: Timestamp.now(),
+                                    senderID: sender!.id);
                                 message.showALlAttribute();
-                                controller.sentAMessage(message, messageData);
+                                controller.sendAMessage(message, messageData);
                                 // Get.offUntil(
                                 //   GetPageRoute(
                                 //       page: () => ChattingPage(),

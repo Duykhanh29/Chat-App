@@ -1,3 +1,4 @@
+import 'package:chat_app/utils/helpers/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:chat_app/data/models/message_data.dart';
@@ -26,33 +27,36 @@ class ChooseOptions extends GetView<MessageController> {
                 const SizedBox(height: 6),
                 const Text('Do you want to delete this message'),
                 const SizedBox(height: 6),
-                if (messageController.differenceHours(message) < 3) ...{
-                  Container(
+                if (Validators.differenceHours(message) < 3) ...{
+                  SizedBox(
                     width: double.infinity,
                     child: TextButton(
-                      onPressed: () {
+                      onPressed: () async {
                         // Thực hiện hành động xóa vĩnh viễn
                         //   Navigator.pop(context);
-                        controller.deleteAMessage(
+                        await controller.deleteAMsg(
                             message.idMessage!, messageData);
                         controller.changeIsChoose();
-                        Navigator.pop(context);
+                        Get.back();
+                        // Navigator.pop(context);
                       },
                       child: const Text('Unsend for everyone'),
                     ),
                   ),
                   const SizedBox(height: 6),
                 },
-                Container(
+                SizedBox(
                   width: double.infinity,
                   child: TextButton(
-                    onPressed: () {
+                    onPressed: () async {
                       // Thực hiện hành động xóa
                       //   Navigator.pop(context);
-                      controller.deleteAMessage(message.idMessage!, messageData,
+                      await controller.deleteAMsg(
+                          message.idMessage!, messageData,
                           justForYou: true);
                       controller.changeIsChoose();
-                      Navigator.pop(context);
+                      Get.back();
+                      // Navigator.pop(context);
                     },
                     child: const Text('Unsend for you'),
                   ),
@@ -63,7 +67,7 @@ class ChooseOptions extends GetView<MessageController> {
                   height: 1,
                 ),
                 const SizedBox(height: 4),
-                Container(
+                SizedBox(
                   width: double.infinity,
                   child: TextButton(
                     onPressed: () {
@@ -92,25 +96,29 @@ class ChooseOptions extends GetView<MessageController> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             TextButton(
-                onPressed: () {
-                  controller.changeIsChoose();
-                  controller.changeReplyMessage(message);
-                  controller.changeisReply();
-                },
-                child: const Text("Reply")),
+              onPressed: () {
+                controller.changeIsChoose();
+                controller.changeReplyMessage(message);
+                controller.changeisReply();
+              },
+              child: const Text("Reply"),
+            ),
             TextButton(
-                onPressed: () async {
-                  FlutterClipboard.copy(message.text!).then((value) {
+              onPressed: () async {
+                FlutterClipboard.copy(message.text!).then(
+                  (value) {
                     return ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Text Copied'),
                       ),
                     );
-                  });
+                  },
+                );
 
-                  controller.changeIsChoose();
-                },
-                child: const Text("Copy")),
+                controller.changeIsChoose();
+              },
+              child: const Text("Copy"),
+            ),
             TextButton(
                 onPressed: () async {
                   await showSheet(context, controller);
@@ -120,7 +128,7 @@ class ChooseOptions extends GetView<MessageController> {
               TextButton(
                 onPressed: () async {
                   await storage.downloadFileToLocalDevice(
-                      message.text!, messageData.idMessageData!, "video");
+                      message.text!, "video");
                 },
                 child: const Text('Download'),
               ),

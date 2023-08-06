@@ -187,8 +187,8 @@ class _LogInWithEmailState extends State<LogInWithEmail> {
                     final isValid = formKey.currentState!.validate();
                     if (isValid) {
                       await controller.signInWithEmailAndPassword(
-                          email: emailController.text,
-                          password: passwordController.text);
+                          email: emailController.text.trim(),
+                          password: passwordController.text.trim());
                     }
                   },
                   child: const Text("Sign in",

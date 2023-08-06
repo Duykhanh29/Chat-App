@@ -1,37 +1,336 @@
+import 'dart:async';
+
 import 'package:chat_app/data/common/methods.dart';
+import 'package:chat_app/data/models/friend.dart';
 import 'package:chat_app/data/models/message_data.dart';
 import 'package:chat_app/modules/auth/controllers/auth_controller.dart';
+import 'package:chat_app/utils/constants/constants.dart';
+import 'package:chat_app/utils/constants/servers_data.dart';
+import 'package:chat_app/utils/helpers/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:chat_app/data/models/user.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
 
 class MessageController extends GetxController {
-  RxList<User> listAllUser = <User>[].obs;
+  // import auth
+  final authController = Get.find<AuthController>();
+
+  final StreamController<List<MessageData>> listAllMsgDataForCurrentUser =
+      StreamController<List<MessageData>>.broadcast();
+  final StreamController<RxList<MessageData>> searchListMsgDataForCurrentUser =
+      StreamController<RxList<MessageData>>.broadcast();
+  RxString searchKey = "".obs;
+
+  // kind of list users
+  RxList<User> listAllUser =
+      <User>[].obs; // this should to move to data_controller
   RxList<User> listUser = <User>[].obs;
+  RxList<User> searchListUser = <User>[].obs;
+  RxList<User> relatedUserToCurrentUser = <User>[].obs;
+  RxList<User> listReceivers = <User>[].obs;
+  Rx<User?> aReceiver = Rx<User?>(null);
+
+  // kind of list msgData
   RxList<MessageData> listMessageData = <MessageData>[].obs;
   RxList<MessageData> searchListMessageData = <MessageData>[].obs;
-  RxList<User> searchListUser = <User>[].obs;
-  RxBool isSearch = false.obs; // it is used for chatting_details
+  Stream<RxList<MessageData>> streamSearchListMessageData =
+      const Stream<RxList<MessageData>>.empty();
+
   RxInt searchMessageIndex = RxInt(-1);
-  TextEditingController searchController = TextEditingController(text: "");
+
+  // options
   RxBool isRecorder = false.obs;
   RxBool isChoosen = false.obs;
+  RxBool isMore = false.obs;
+  RxBool isSearch = false.obs; // it is used for chatting_details
+  TextEditingController searchController = TextEditingController(text: "");
+
+  // for a msg
   RxString deletedID = "".obs;
   RxBool deleteJustForYou = false.obs;
   RxBool isReply = false.obs;
-  RxBool isMore = false.obs;
   Message? replyMessage;
-  User? replyToUser;
-  final authController = Get.find<AuthController>();
+  String? replyToUserID;
 
-  RxList<User> listReceivers = <User>[].obs;
-  Rx<User?> aReceiver = Rx<User?>(null);
+  // location
+  RxString latitude = "".obs;
+  RxString longtitude = "".obs;
+
+  // for detail page
+  RxList<String> listLink = RxList<String>();
+  RxList<Map<String, String>>? listMedia = RxList<Map<String, String>>();
 
   void resetReceivers() {
     aReceiver.value = null;
     listReceivers.value = <User>[].obs;
+  }
+
+  // stream get all msgData in db
+  Stream<List<MessageData>> getAllMsgDatainDB() async* {
+    final ref =
+        FirebaseFirestore.instance.collection('messageDatas').snapshots();
+    StreamController<List<MessageData>> streamController =
+        StreamController<List<MessageData>>();
+    final subscription = ref.listen((event) {
+      List<MessageData> listMsgData = [];
+      for (var element in event.docs) {
+        listMsgData.add(MessageData.fromJson(element.data()));
+      }
+      streamController.sink.add(listMsgData);
+    });
+    //close subscription and controller
+    streamController.onCancel = () {
+      subscription.cancel();
+      streamController.close();
+    };
+    yield* streamController.stream;
+  }
+
+  // way 1: stream to get all msgData of current User
+  Stream<List<MessageData>> getListMsgDataOfCurrentUser(
+      User? currentUser) async* {
+    final ref = FirebaseFirestore.instance
+        .collection('messageDatas')
+        .where('receivers', arrayContains: currentUser!.id)
+        .snapshots();
+    StreamController<List<MessageData>> streamController =
+        StreamController<List<MessageData>>();
+    final subscription = ref.listen((event) {
+      List<MessageData> listMsgData = [];
+      for (var element in event.docs) {
+        listMsgData.add(MessageData.fromJson(element.data()));
+      }
+      listAllMsgDataForCurrentUser.sink.add(listMsgData);
+    });
+    //close subscription and controller
+    streamController.onCancel = () {
+      subscription.cancel();
+      streamController.close();
+    };
+    yield* listAllMsgDataForCurrentUser.stream;
+  }
+
+  // way 2: stream to get all msgData of current User
+  Stream<RxList<MessageData>> getAllMsgDataOfCurrentUser(
+      User? currentUser) async* {
+    final msgDatas = FirebaseFirestore.instance.collection('messageDatas');
+    final result =
+        msgDatas.where('receivers', arrayContains: currentUser!.id).snapshots();
+    StreamController<RxList<MessageData>> streamController =
+        StreamController<RxList<MessageData>>();
+    result.listen((event) {
+      List<MessageData> messages = [];
+      for (var doc in event.docs) {
+        messages.add(MessageData.fromJson(doc.data()));
+      }
+      RxList<MessageData> rxMessages = messages.obs;
+      streamController.add(rxMessages);
+    });
+    yield* streamController.stream;
+  }
+
+  Stream<MessageData> getMesgData(MessageData messageData) async* {
+    final ref = FirebaseFirestore.instance
+        .collection('messageDatas')
+        .doc(messageData.idMessageData)
+        .snapshots();
+    StreamController<MessageData> controller = StreamController<MessageData>();
+    final subscription = ref.listen((event) {
+      if (event.exists) {
+        MessageData messageData = MessageData(
+            chatName: event.data()!['chatName'],
+            createdAt: event.data()!['createdAt'],
+            idMessageData: event.id,
+            groupImage: event.data()!['groupImage'],
+            listMessages: (event.data()!['listMessages'] as List<dynamic>)
+                .map((e) => Message.fromJson(e))
+                .toList(),
+            receivers: List<String>.from(event.data()!['receivers'])
+                .map((e) => e.toString())
+                .toList());
+        controller.sink.add(messageData);
+      } else {
+        controller.close();
+      }
+    });
+    //close subscription and controller
+    controller.onCancel = () {
+      subscription.cancel();
+      controller.close();
+    };
+    yield* controller.stream;
+  }
+
+  Stream<List<MessageData>> updateDisplay(
+      User? currentUser, String searchKey) async* {
+    final ref = FirebaseFirestore.instance
+        .collection('messageDatas')
+        .where('receivers', arrayContains: currentUser!.id)
+        .snapshots();
+
+    StreamController<List<MessageData>> streamController =
+        StreamController<List<MessageData>>();
+    StreamSubscription subscription = ref.listen((event) {
+      List<MessageData> listMsgData = [];
+      for (var element in event.docs) {
+        listMsgData.add(MessageData.fromJson(element.data()));
+      }
+      if (searchKey.isEmpty) {
+        searchListUser.value = [];
+        streamController.sink.add(listMsgData);
+      } else {
+        List<MessageData> result = listMsgData.where((data) {
+          if (data.receivers!.length == 2) {
+            String? receiver = CommonMethods.getUserFromListReceiverIDs(
+                data.receivers, authController.currentUser.value);
+            User? user = userGetUserFromIDBYGetX(receiver!);
+
+            return user!.name
+                .toString()
+                .toLowerCase()
+                .contains(searchKey.toLowerCase());
+          } else {
+            return data.chatName
+                .toString()
+                .toLowerCase()
+                .contains(searchKey.toLowerCase());
+          }
+        }).toList();
+        // if (result.isEmpty) {
+        List<User> userList = [];
+        // List<User> result = [];
+        for (var user in listAllUser) {
+          if (!isCheckExistUser(listMsgData, user) &&
+              user.id != currentUser.id) {
+            userList.add(user);
+          }
+        }
+        searchListUser.value = userList.where((data) {
+          final nameContainsSearchKey = data.name
+              .toString()
+              .toLowerCase()
+              .contains(searchKey.toLowerCase());
+
+          final emailContainsSearchKey = data.email
+              .toString()
+              .toLowerCase()
+              .contains(searchKey.toLowerCase());
+
+          return nameContainsSearchKey || emailContainsSearchKey;
+        }).toList();
+        final x = searchListUser.value;
+        // }
+        streamController.sink.add(result);
+      }
+    });
+    //close subscription and controller
+    streamController.onCancel = () {
+      subscription.cancel();
+      streamController.close();
+    };
+    yield* streamController.stream;
+  }
+
+  Stream<RxList<MessageData>> updateDisplayedMsgData(String searchKey) async* {
+    List<MessageData> list = await listAllMsgDataForCurrentUser.stream.first;
+    RxList<MessageData> displayedChatList = RxList<MessageData>();
+    List<MessageData> result = [];
+    if (searchKey.isEmpty) {
+      result = list;
+      // displayedChatList.value = result;
+      // displayedChatList.addAll(list);
+    } else {
+      result = list.where((data) {
+        List<MessageData> temtList = [];
+        if (data.receivers!.length == 2) {
+          String? receiver = CommonMethods.getUserFromListReceiverIDs(
+              data.receivers, authController.currentUser.value);
+          User? user = userGetUserFromIDBYGetX(receiver!);
+          print(user!.name
+              .toString()
+              .toLowerCase()
+              .contains(searchKey.toLowerCase()));
+          return user.name
+              .toString()
+              .toLowerCase()
+              .contains(searchKey.toLowerCase());
+        } else {
+          return data.chatName
+              .toString()
+              .toLowerCase()
+              .contains(searchKey.toLowerCase());
+        }
+      }).toList();
+      if (result.isEmpty) {
+        List<User> userList = [];
+        // List<User> result = [];
+        for (var user in listAllUser) {
+          if (!isCheckExistUser(list, user)) {
+            userList.add(user);
+          }
+        }
+        searchListUser.value = userList
+            .where((data) => data.name
+                .toString()
+                .toLowerCase()
+                .contains(searchKey.toLowerCase()))
+            .toList();
+      }
+      print("Size of list: ${list.length}");
+    }
+
+    displayedChatList.value = result;
+    searchListMsgDataForCurrentUser.add(displayedChatList);
+    yield* searchListMsgDataForCurrentUser.stream;
+  }
+
+  void changeSearchKey(String value) {
+    searchKey.value = value;
+  }
+
+  Future loadAllUserRelatedToCurrentUser(User currentUser) async {
+    List<User> list = <User>[].obs;
+    try {
+      // final owner = await FirebaseFirestore.instance
+      //     .collection("friends")
+      //     .doc(currentUser.id)
+      //     .get();
+      // final snapshot =
+      //     await FirebaseFirestore.instance.collection('users').get();
+      // // get all user from friend list
+      // var data = owner.data() as Map<String, dynamic>;
+      // final friends = data['listFriend'];
+      // for (var element in friends) {
+      //   User? user = await getUserFromID(element);
+      //   list.add(user!);
+      // }
+
+      // get all user who are stranger but in the same group
+      var listMsgData = listMessageData.value;
+      for (var element in listMsgData) {
+        for (var el1 in element.receivers!) {
+          if (!checkExist(el1, list)) {
+            User? user = await getUserFromID(el1);
+            list.add(user!);
+          }
+        }
+      }
+      return list;
+    } catch (e) {
+      print("An error occured: $e");
+    }
+  }
+
+  bool checkExist(String id, List<User> list) {
+    for (var element in list) {
+      if (id == element.id) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Future<User?> getUserFromID(String id) async {
@@ -62,6 +361,7 @@ class MessageController extends GetxController {
           story: element.data()['story'],
           urlImage: element.data()['urlImage'],
           userStatus: getUserStatus(element.data()['userStatus']),
+          urlCoverImage: element.data()['urlCoverImage'],
         );
         break;
       }
@@ -89,6 +389,7 @@ class MessageController extends GetxController {
         story: userDoc['story'],
         urlImage: userDoc['urlImage'],
         userStatus: getUserStatus(userDoc['userStatus']),
+        urlCoverImage: userDoc['urlCoverImage'],
       );
     }
 
@@ -108,16 +409,18 @@ class MessageController extends GetxController {
           story: element.data()['story'],
           urlImage: element.data()['urlImage'],
           userStatus: getUserStatus(element.data()['userStatus']),
+          urlCoverImage: element.data()['urlCoverImage'],
         );
       }
     });
     aReceiver.value = user;
   }
 
-  Future getListReceivers(List<String> listID) async {
+  // get list receivers from a list string of receiverID in a chat
+  Future getListReceivers(List<String> listIDReceivers) async {
     List<User> list = <User>[].obs;
     final snapshot = await FirebaseFirestore.instance.collection('users').get();
-    for (int i = 0; i < listID.length; i++) {
+    for (int i = 0; i < listIDReceivers.length; i++) {
       // User? user = await getUserByID(listID[i]);
       // if (user != null) {
       //   list.add(user);
@@ -126,7 +429,7 @@ class MessageController extends GetxController {
       final snapshot =
           await FirebaseFirestore.instance.collection('users').get();
       snapshot.docs.forEach((element) {
-        if (listID[i] == element.id) {
+        if (listIDReceivers[i] == element.id) {
           user = User(
             id: element.data()['id'],
             name: element.data()['name'],
@@ -135,6 +438,7 @@ class MessageController extends GetxController {
             story: element.data()['story'],
             urlImage: element.data()['urlImage'],
             userStatus: getUserStatus(element.data()['userStatus']),
+            urlCoverImage: element.data()['urlCoverImage'],
           );
           list.add(user!);
         }
@@ -183,12 +487,13 @@ class MessageController extends GetxController {
                 story: element.data()['story'],
                 urlImage: element.data()['urlImage'],
                 userStatus: getUserStatus(element.data()['userStatus']),
+                urlCoverImage: element.data()['urlCoverImage'],
               );
               list.value.add(user);
             }));
 
-    print("stop read");
-    print("Leght: ${list.value.length}");
+    // print("stop read");
+    // print("Leght: ${list.value.length}");
     return list;
   }
 
@@ -205,13 +510,15 @@ class MessageController extends GetxController {
 
       final chatName = element.data()['chatName'];
       final idMessageData = element.data()['idMessageData'];
-      print("ID mEssageData value: $idMessageData");
+      // print("ID mEssageData value: $idMessageData");
       final groupImage = element.data()['groupImage'];
       final isVlid =
           CommonMethods.isContainUserInAList(currentUser!, receivers);
       if (isVlid) {
         if (messages != null) {
           MessageData messageData = MessageData(
+              idAdmin: element.data()['idAdmin'],
+              createdAt: element.data()['createdAt'],
               chatName: chatName,
               groupImage: groupImage,
               idMessageData: idMessageData,
@@ -224,6 +531,7 @@ class MessageController extends GetxController {
     return list;
   }
 
+  // this is unnecessary
   Future<RxList<MessageData>> getAllMessageData() async {
     RxList<MessageData> list = <MessageData>[].obs;
     print("Get list MessageData");
@@ -241,6 +549,8 @@ class MessageController extends GetxController {
 
       if (messages != null) {
         MessageData messageData = MessageData(
+            idAdmin: element.data()['idAdmin'],
+            createdAt: element.data()['createdAt'],
             listMessages: messages.map((e) => Message.fromJson(e)).toList(),
             chatName: chatName,
             groupImage: groupImage,
@@ -252,6 +562,11 @@ class MessageController extends GetxController {
     return list;
   }
 
+  void setListMessageData(List<MessageData> list) {
+    listMessageData.value = list;
+    searchListMessageData.value = list;
+  }
+
   @override
   void onInit() async {
     // String id = "9Q6tAOynd2XdIGQFVi9QYyOhA0y1";
@@ -259,19 +574,31 @@ class MessageController extends GetxController {
 
     // TODO: implement onInit
     super.onInit();
-    print("On inut");
+    // print("On inut");
     User? currentUser = authController.currentUser.value;
-    print("First check user: \n");
-    currentUser!.showALlAttribute();
-    listUser.value = await getListUserInDB();
+    //if (authController.isLogin.value == true) {
+    // print("First check user: \n");
+    if (currentUser != null) {
+      // currentUser.showALlAttribute();
+      listUser.value =
+          await getListUserInDB(); // this listUser isn's used in filter function. It is unneccesary
+      listAllUser.value = await getListUserInDB();
+      listMessageData.value = await getAllMessageDataOfCurrentUser(currentUser);
+      searchListMessageData.value = listMessageData;
+      relatedUserToCurrentUser.value =
+          await loadAllUserRelatedToCurrentUser(currentUser);
+      getListMsgDataOfCurrentUser(currentUser);
+      updateDisplayedMsgData(searchKey.value);
+    }
+  }
+
+  Future updateListAllUser() async {
     listAllUser.value = await getListUserInDB();
-    listMessageData.value = await getAllMessageDataOfCurrentUser(currentUser);
-    searchListMessageData.value = listMessageData;
   }
 
   @override
   void onReady() {
-    print("on Ready");
+    // print("on Ready");
     super.onReady();
   }
 
@@ -294,10 +621,13 @@ class MessageController extends GetxController {
   MessageData? getMessageDataOneByOne(User sender, User receiver) {
     //print("User id ${user.id}");
     for (var element in listMessageData) {
-      if (element.receivers!.last == receiver.id &&
-          element.receivers!.first == sender.id) {
-        print('Same User:${element.receivers!.last} with list ${receiver.id} ');
-        return element;
+      if (!CommonMethods.isAGroup(element.receivers)) {
+        if (element.receivers!.last == receiver.id &&
+            element.receivers!.first == sender.id) {
+          print(
+              'Same User:${element.receivers!.last} with list ${receiver.id} ');
+          return element;
+        }
       }
     }
   }
@@ -310,7 +640,9 @@ class MessageController extends GetxController {
     messageData = null;
   }
 
-  void sentAMessage(Message message, MessageData messageData) async {
+  var lock = Object();
+
+  void sendAMessage(Message message, MessageData messageData) async {
     try {
       CollectionReference messageDataCollections =
           FirebaseFirestore.instance.collection('messageDatas');
@@ -321,37 +653,95 @@ class MessageController extends GetxController {
       // Lấy tham chiếu đến tài liệu của người dùng trong collection "messageData"
       DocumentReference userDocRef =
           messageDataCollections.doc(messageData.idMessageData);
-      print("ID ò messageData: ${messageData.idMessageData}");
-      // Lấy thông tin tài liệu của người dùng từ Firebase Firestore
-      DocumentSnapshot messageDataDoc = await userDocRef.get();
 
-      if (!messageDataDoc.exists) {
-        // haven't sent any message before
-        messageData.listMessages!.add(message); // update to GetX
-        print('I am crazy\n');
-        message.showALlAttribute();
-        // update to firebase
-        MessageData newMessageData = MessageData(
-            // sender: messageData.sender,
-            listMessages: messageData.listMessages!,
-            receivers: messageData.receivers,
-            idMessageData: messageData.idMessageData);
-        final data = newMessageData.toJson();
-        print(data);
-        await userDocRef.set(data); // fix at here
-        listMessageData.refresh();
-      } else {
-        // update to GetX
-        messageData.listMessages!.add(message);
-        // update to FIrebase
-        final data = {
-          'listMessages':
-              messageData.listMessages!.map((msg) => msg.toJson()).toList(),
-        };
-        await userDocRef.update(data);
-        // update data
-        listMessageData.refresh();
-      }
+      FirebaseFirestore.instance.runTransaction((transaction) async {
+        DocumentSnapshot messageDataDoc = await transaction.get(userDocRef);
+        if (!messageDataDoc.exists) {
+          // haven't sent any message before
+          messageData.listMessages!.add(
+            Message(
+              chatMessageType: message.chatMessageType,
+              dateTime: Timestamp.fromMicrosecondsSinceEpoch(
+                  DateTime.now().microsecondsSinceEpoch),
+              isDeleted: message.isDeleted,
+              isFoward: message.isFoward,
+              isReply: message.isReply,
+              isSearch: message.isSearch,
+              isSeen: message.isSeen,
+              // idMessage: Uuid().v4(),
+              idReplyText: message.idReplyText,
+              longTime: message.longTime,
+              messageStatus: message.messageStatus,
+              replyToUserID: message.replyToUserID,
+              seenBy: message.seenBy,
+              senderID: firebaseAuth.currentUser!.uid,
+              text: message.text,
+            ),
+          ); // update to GetX
+
+          // DateTime serverTime = await ServerData.getServerTime();
+
+          // message.showALlAttribute();
+          // update to firebase
+          MessageData newMessageData = MessageData(
+              // sender: messageData.sender,
+
+              createdAt: Timestamp.now(),
+              listMessages: messageData.listMessages!,
+              receivers: messageData.receivers,
+              idMessageData: messageData.idMessageData);
+          final data = newMessageData.toJson();
+          print(data);
+          transaction.set(userDocRef, data);
+          //  await userDocRef.set(data); // fix at here
+          listMessageData.refresh();
+        } else {
+          // update to GetX
+
+          // String newMessageId = Uuid().v4();
+          messageData.listMessages!.add(
+            Message(
+              chatMessageType: message.chatMessageType,
+              dateTime: Timestamp.fromMicrosecondsSinceEpoch(
+                  DateTime.now().microsecondsSinceEpoch),
+              isDeleted: message.isDeleted,
+              isFoward: message.isFoward,
+              isReply: message.isReply,
+              isSearch: message.isSearch,
+              isSeen: message.isSeen,
+              // idMessage: Uuid().v4(),       // if wrong => delete this comment
+              idReplyText: message.idReplyText,
+              longTime: message.longTime,
+              messageStatus: message.messageStatus,
+              replyToUserID: message.replyToUserID,
+              seenBy: message.seenBy,
+              senderID: firebaseAuth.currentUser!.uid,
+              text: message.text,
+            ),
+          );
+          // update to FIrebase
+          final data = {
+            'createdAt': Timestamp.now(),
+            'listMessages': FieldValue.arrayUnion([message.toJson()]),
+            // messageData.listMessages!
+            //     .map((msg) => {
+            //           ...msg.toJson(),
+            //           if (msg.idMessage == message.idMessage)
+            //             'senderID': message.senderID,
+            //         })
+            //     .toList(),
+
+            // 'listMessages':
+            //     messageData.listMessages!.map((msg) => msg.toJson()).toList(),
+          };
+          transaction.update(userDocRef, data);
+          // await userDocRef.update(data);
+          // update data
+        }
+      });
+      print("ID ò messageData: ${messageData.idMessageData}");
+
+      // Lấy thông tin tài liệu của người dùng từ Firebase Firestore
     } catch (error) {
       print("An error occurred: $error");
     }
@@ -371,37 +761,47 @@ class MessageController extends GetxController {
     //searchListMessageData.value = listMessageData.value;
     List<MessageData> list = [];
     for (var data in messageDataList) {
-      if (!data.listMessages!.isEmpty) {
+      if (CommonMethods.isAGroup(data.receivers)) {
         list.add(data);
       } else {
-        // if list<message> of a messageData is null -> remove it
-        list.remove(data);
+        if (!data.listMessages!.isEmpty) {
+          list.add(data);
+        } else {
+          // if list<message> of a messageData is null -> remove it
+          list.remove(data);
+        }
       }
     }
     // sort by time
     list.sort(
-      (a, b) => b.listMessages!.last.dateTime!
-          .compareTo(a.listMessages!.last.dateTime!),
+      (a, b) => b.createdAt!.compareTo(a.createdAt!),
     );
     print("Print list to check/n");
     for (var element in list) {
-      element.showALlAttribute();
+      // element.showALlAttribute();
     }
     return list;
   }
 
   // to filter list messageData from input
-  void filterListMessageData(String userName) async {
+  void filterListMessageData(
+      String userName, List<MessageData> rootedList) async {
     print("Search list user");
     List<MessageData> list = [];
     if (userName.isEmpty) {
-      list = listMessageData.value;
+      list = rootedList;
     } else {
-      list = listMessageData.where((data) {
+      list = rootedList.where((data) {
         List<MessageData> temtList = [];
-        if (data.receivers!.length == 1) {
-          User? user = userGetUserFromIDBYGetX(data.receivers!.last);
-          return user!.name
+        if (data.receivers!.length == 2) {
+          String? receiver = CommonMethods.getUserFromListReceiverIDs(
+              data.receivers, authController.currentUser.value);
+          User? user = userGetUserFromIDBYGetX(receiver!);
+          print(user!.name
+              .toString()
+              .toLowerCase()
+              .contains(userName.toLowerCase()));
+          return user.name
               .toString()
               .toLowerCase()
               .contains(userName.toLowerCase());
@@ -416,7 +816,7 @@ class MessageController extends GetxController {
         List<User> userList = [];
         List<User> result = [];
         for (var user in listAllUser) {
-          if (!isCheckExistUser(listMessageData.value, user)) {
+          if (!isCheckExistUser(rootedList, user)) {
             userList.add(user);
           }
         }
@@ -434,9 +834,11 @@ class MessageController extends GetxController {
 
   bool isCheckExistUser(List<MessageData> list, User user) {
     for (var data in list) {
-      if (data.receivers!.length == 1) {
-        if (data.receivers!.last == user.id) {
+      if (data.receivers!.contains(user.id)) {
+        if (data.receivers!.length == 2) {
+          // if (data.receivers!.last == user.id) {
           return true;
+          // }
         }
       }
     }
@@ -480,6 +882,34 @@ class MessageController extends GetxController {
     }
   }
 
+  void printListDataMessage(MessageData messageData) {
+    for (var element in messageData.listMessages!) {
+      print(
+          "ID: ${element.idMessage} and text: ${element.text} and type: ${element.chatMessageType} ");
+    }
+  }
+
+  // to foward a message
+  Message findMessageFromIdAndUser(
+      String id, String userID, String idMessageData) {
+    // if converstion is one by one
+    for (var element in listMessageData) {
+      if (element.idMessageData == idMessageData) {
+        for (var data in element.listMessages!) {
+          if (data.idMessage == id) {
+            return data;
+          }
+        }
+      }
+    }
+
+    return Message();
+
+    // if conversation is a group
+  }
+
+  //for a message
+
   void changeRecorder() {
     isRecorder.value = !isRecorder.value;
   }
@@ -510,43 +940,25 @@ class MessageController extends GetxController {
 
   void changeReplyMessage(Message message) {
     replyMessage = message;
-    replyToUser = message.sender;
+    replyToUserID = message.senderID;
     update();
+  }
+
+  void changeLongTitudeVsLattitude(
+      {required String newLong, required String newLat}) {
+    longtitude.value = newLong;
+    latitude.value = newLat;
+  }
+
+  void resetLongVsLat() {
+    longtitude.value = "";
+    latitude.value = "";
   }
 
   void resetReplyMessage() {
     replyMessage = null;
-    replyToUser = null;
+    replyToUserID = null;
     update();
-  }
-
-  void printListDataMessage(MessageData messageData) {
-    for (var element in messageData.listMessages!) {
-      print(
-          "ID: ${element.idMessage} and text: ${element.text} and type: ${element.chatMessageType} ");
-    }
-  }
-
-  // to foward a message
-  Message findMessageFromIdAndUser(String id, User user, String idMessageData) {
-    // if converstion is one by one
-    for (var element in listMessageData) {
-      if (element.idMessageData == idMessageData) {
-        for (var data in element.listMessages!) {
-          if (data.idMessage == id) {
-            return data;
-          }
-        }
-      }
-    }
-
-    return Message();
-
-    // if conversation is a group
-  }
-
-  int differenceHours(Message message) {
-    return DateTime.now().difference(message.dateTime!).inHours;
   }
 
   void deleteAMessage(String idMessage, MessageData messageData,
@@ -560,7 +972,9 @@ class MessageController extends GetxController {
               listMessageData[i].listMessages![j].isDeleted = true;
               deleteJustForYou.value = true; // I forget why I do this code
             } else {
-              if (differenceHours(listMessageData[i].listMessages![j]) < 3) {
+              if (Validators.differenceHours(
+                      listMessageData[i].listMessages![j]) <
+                  3) {
                 listMessageData[i].listMessages![j].isDeleted = true;
                 listMessageData[i].listMessages![j].text = "NULL";
               } else {
@@ -575,8 +989,59 @@ class MessageController extends GetxController {
     resetDeleteForYou();
   }
 
+  Future deleteAMsg(String idMsg, MessageData messageData,
+      {bool justForYou = false}) async {
+    CollectionReference messageDataCollections =
+        FirebaseFirestore.instance.collection('messageDatas');
+    QuerySnapshot querySnapshot = await messageDataCollections.get();
+    DocumentReference userDocRef =
+        messageDataCollections.doc(messageData.idMessageData);
+    final snapshot = await userDocRef.get();
+    if (snapshot.exists) {
+      final listMsg = snapshot.data() as Map<String, dynamic>;
+      final messages = listMsg['listMessages'] as List<dynamic>;
+      List<Message>? listMessage =
+          messages.map((e) => Message.fromJson(e)).toList();
+      for (var element in listMessage) {
+        if (element.idMessage == idMsg) {
+          if (justForYou) {
+            // element.isDeleted = true;
+          } else {
+            if (Validators.differenceHours(element) < 3) {
+              element.isDeleted = true;
+              element.text = "NULL";
+            } else {
+              element.isDeleted = true;
+            }
+          }
+        }
+      }
+      final data = {
+        'listMessages': listMessage.map((e) => e.toJson()).toList()
+      };
+      await userDocRef.update(data);
+    }
+  }
+
   void resetDeleteForYou() {
     deleteJustForYou.value = false;
+  }
+
+  // for detailed page
+  void getAllLink(List<String> list) {
+    listLink.value = list;
+  }
+
+  void getAllMedia(List<Map<String, String>> list) {
+    listMedia!.value = list;
+  }
+
+  void resetAllLink() {
+    listLink.value = [];
+  }
+
+  void resetAllMedia() {
+    listMedia!.value = [];
   }
 
   // infinished feature
@@ -588,882 +1053,25 @@ class MessageController extends GetxController {
     }
   }
 
-  // check functions
-  void printALlUser(List<MessageData> list) {
-    for (var element in list) {
-      // print(
-      //     "User: ID: ${element.sender!.id} and email:  ${element.sender!.email},name ${element.sender!.name}");
-    }
+  // consider to add
+  Future checkForChanges() async {
+    FirebaseFirestore.instance.runTransaction((Transaction transaction) async {
+      CollectionReference ref = FirebaseFirestore.instance.collection('users');
+    });
   }
-
-  // User user1 = User(
-  //     id: "ID01",
-  //     name: "Nguyen Tung",
-  //     story: false,
-  //     userStatus: UserStatus.ONLINE,
-  //     urlImage:
-  //         "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSRKouGaC5wkHjgKIuSSZTrTBBQWc5gEIOPFw&usqp=CAU");
-  // User user2 = User(
-  //     id: "ID02",
-  //     name: "Nguyen Manh",
-  //     userStatus: UserStatus.PRIVACY,
-  //     story: false,
-  //     urlImage:
-  //         "https://imgv3.fotor.com/images/share/Unblur-image-online-automatically-with-Fotor-AI-image-deburring-tool.jpg");
-  // User user3 = User(
-  //     id: "ID03",
-  //     name: "Nguyen Huong",
-  //     story: true,
-  //     userStatus: UserStatus.ONLINE,
-  //     urlImage:
-  //         "https://topten.review/wp-content/uploads/sites/3/2022/02/VanceAI-Image-Sharpener-700-360@2x-300x154.png");
-  // User user4 = User(
-  //     id: "ID04",
-  //     name: "Nguyen Hung1",
-  //     userStatus: UserStatus.OFFLINE,
-  //     story: true,
-  //     urlImage:
-  //         "https://images.unsplash.com/photo-1635468872214-8d30953f0057?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=437&q=80");
-  // User user5 = User(
-  //     id: "ID05",
-  //     name: "Nguyen Hung",
-  //     story: true,
-  //     userStatus: UserStatus.PRIVACY,
-  //     urlImage:
-  //         "https://assets.ayobandung.com/crop/0x0:0x0/750x500/webp/photo/2023/02/20/ascxzcsafag-1165003792.jpg");
-  // User user6 = User(
-  //     id: "ID06",
-  //     name: "Nguyen Luc",
-  //     story: true,
-  //     userStatus: UserStatus.ONLINE,
-  //     urlImage: "https://pixlr.com/images/index/remove-bg.webp");
-  // User user7 = User(
-  //     id: "ID07",
-  //     name: "Nguyen Quang",
-  //     story: true,
-  //     userStatus: UserStatus.OFFLINE,
-  //     urlImage:
-  //         "https://images.unsplash.com/photo-1613323593608-abc90fec84ff?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80");
-  // User user8 = User(
-  //     id: "ID08",
-  //     name: "Doctor Strange",
-  //     story: true,
-  //     userStatus: UserStatus.ONLINE,
-  //     urlImage:
-  //         "https://play-lh.googleusercontent.com/MqXH34arO8Yb0Wm8UVw99eknd1a4Oltj959fls29wlfo9xHg5oKdi9RlgliORSQGSltklw");
-  // User user9 = User(
-  //     id: "ID09",
-  //     name: "David James",
-  //     story: true,
-  //     urlImage:
-  //         "https://images.freeimages.com/images/previews/e6e/cn-tower-1636717.jpg",
-  //     userStatus: UserStatus.ONLINE);
-  // User user10 = User(
-  //     id: "ID010",
-  //     name: "natural",
-  //     story: true,
-  //     urlImage:
-  //         "https://images.unsplash.com/photo-1566438480900-0609be27a4be?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8aW1hZ2V8ZW58MHx8MHx8&w=1000&q=80",
-  //     userStatus: UserStatus.ONLINE);
-  // listUser.value = [
-  //   user1,
-  //   user2,
-  //   user3,
-  //   user4,
-  //   user5,
-  //   user6,
-  //   user7,
-  //   user8,
-  //   user9,
-  //   user10,
-  // ];
-  // listMessageData.value = [
-  //   MessageData(
-  //     user: user1,
-  //     listMessages: [
-  //       Message(
-  //           idMessage: "ID01",
-  //           text:
-  //               "The above code specifies that our app should execute a command when there is a match in the string specified in the first argument that is passed to our intent function call.",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID02",
-  //           text: "I",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now()
-  //               .subtract(const Duration(minutes: 4, seconds: 30)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID03",
-  //           text: "Oke",
-  //           chatMessageType: ChatMessageType.AUDIO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID04",
-  //           text:
-  //               "https://www.youtube.com/watch?v=PwkxZq5Ef4g&list=RDMM&index=2",
-  //           chatMessageType: ChatMessageType.VIDEO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID05",
-  //           text:
-  //               "https://64.media.tumblr.com/8b4c01edd9f4c95f92197a961dd7b1af/2177eda79af71270-7e/s1280x1920/920265619ec74632fd83faca04abaddb5d7b3e38.jpg",
-  //           chatMessageType: ChatMessageType.IMAGE,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID06",
-  //           text: "Oke",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.RECEIVED,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID07",
-  //           text: "https://www.youtube.com/",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: true),
-  //     ],
-  //   ),
-  //   MessageData(
-  //     user: user2,
-  //     listMessages: [
-  //       Message(
-  //           idMessage: "ID01",
-  //           text: "https://www.youtube.com/",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID02",
-  //           text:
-  //               "https://media-cdn-v2.laodong.vn/storage/newsportal/2023/2/17/1148971/Lee-Je-Hoon-01.jpg",
-  //           chatMessageType: ChatMessageType.IMAGE,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now()
-  //               .subtract(const Duration(minutes: 4, seconds: 30)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID03",
-  //           text: "audios/SonTingMTP.mp3",
-  //           chatMessageType: ChatMessageType.AUDIO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID04",
-  //           text:
-  //               "https://www.youtube.com/watch?v=1KCHzbgu4no&list=RDMM&start_radio=1&rv=nSBMAQpvMjE",
-  //           chatMessageType: ChatMessageType.VIDEO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID05",
-  //           text: "guys",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID06",
-  //           text: "https://www.youtube.com/",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.RECEIVED,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID07",
-  //           text: "Nha",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: false),
-  //     ],
-  //   ),
-  //   MessageData(
-  //     user: user3,
-  //     listMessages: [
-  //       Message(
-  //           idMessage: "ID01",
-  //           text: "text",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID02",
-  //           text: "I",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now()
-  //               .subtract(const Duration(minutes: 4, seconds: 30)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID03",
-  //           text: "audios/SonTingMTP.mp3",
-  //           chatMessageType: ChatMessageType.AUDIO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID04",
-  //           text:
-  //               "https://www.youtube.com/watch?v=nSBMAQpvMjE&list=RDGMEMYH9CUrFO7CfLJpaD7UR85w&start_radio=1&rv=HXkh7EOqcQ4",
-  //           chatMessageType: ChatMessageType.VIDEO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID05",
-  //           text: "https://www.youtube.com/",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID06",
-  //           text: "Oke",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.RECEIVED,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID07",
-  //           text: "audios/SonTingMTP.mp3",
-  //           chatMessageType: ChatMessageType.AUDIO,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID08",
-  //           text:
-  //               "https://bloganchoi.com/wp-content/uploads/2021/05/lee-je-hoon-chia-se.jpg",
-  //           chatMessageType: ChatMessageType.IMAGE,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID09",
-  //           text: "https://www.youtube.com/",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now()
-  //               .subtract(const Duration(minutes: 4, seconds: 30)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID10",
-  //           text: "audios/SonTingMTP.mp3",
-  //           chatMessageType: ChatMessageType.AUDIO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID11",
-  //           text: "you",
-  //           chatMessageType: ChatMessageType.VIDEO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID12",
-  //           text: "https://www.youtube.com/",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID13",
-  //           text: "Oke",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.RECEIVED,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID14",
-  //           text: "Nha",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID15",
-  //           text: "Nha",
-  //           chatMessageType: ChatMessageType.VIDEOCALL,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: true,
-  //           longTime: 200),
-  //     ],
-  //   ),
-  //   MessageData(
-  //     user: user4,
-  //     listMessages: [
-  //       Message(
-  //           idMessage: "ID01",
-  //           text: "text",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID02",
-  //           text: "https://www.youtube.com/",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now()
-  //               .subtract(const Duration(minutes: 4, seconds: 30)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID03",
-  //           text: "audios/SonTingMTP.mp3",
-  //           chatMessageType: ChatMessageType.AUDIO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID04",
-  //           text: "https://www.youtube.com/watch?v=HXkh7EOqcQ4",
-  //           chatMessageType: ChatMessageType.VIDEO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID05",
-  //           text: "guys",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID06",
-  //           text: "Oke",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.RECEIVED,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID07",
-  //           text: "audios/SonTingMTP.mp3",
-  //           chatMessageType: ChatMessageType.AUDIO,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID08",
-  //           text: "https://www.youtube.com/",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID09",
-  //           text: "I",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now()
-  //               .subtract(const Duration(minutes: 4, seconds: 30)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID10",
-  //           text: "audios/SonTingMTP.mp3",
-  //           chatMessageType: ChatMessageType.AUDIO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID11",
-  //           text: "you",
-  //           chatMessageType: ChatMessageType.VIDEO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID12",
-  //           text:
-  //               "https://media.doisongphapluat.com/media/trieu-phuong-linh/2023/04/03/kim-do-ki-phat-hien-black-sun-la-cau-lac-bo-co-nhieu-te-nan11.png",
-  //           chatMessageType: ChatMessageType.IMAGE,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID13",
-  //           text: "Oke",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.RECEIVED,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID14",
-  //           text: "Nha",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(days: 1)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID15",
-  //           text: "Nha",
-  //           chatMessageType: ChatMessageType.VIDEOCALL,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(days: 1)),
-  //           isSeen: true,
-  //           longTime: 500),
-  //     ],
-  //   ),
-  //   MessageData(
-  //     user: user5,
-  //     listMessages: [
-  //       Message(
-  //           idMessage: "ID01",
-  //           text: "text",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID02",
-  //           text: "I",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now()
-  //               .subtract(const Duration(minutes: 4, seconds: 30)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID03",
-  //           text: "audios/SonTingMTP.mp3",
-  //           chatMessageType: ChatMessageType.AUDIO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID04",
-  //           text: "https://www.youtube.com/watch?v=QWvXm_AppeE",
-  //           chatMessageType: ChatMessageType.VIDEO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID05",
-  //           text: "guys",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID06",
-  //           text: "Oke",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.RECEIVED,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID07",
-  //           text: "audios/SonTingMTP.mp3",
-  //           chatMessageType: ChatMessageType.AUDIO,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID08",
-  //           text: "text",
-  //           chatMessageType: ChatMessageType.CALL,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
-  //           isSeen: true,
-  //           longTime: 100),
-  //       Message(
-  //           idMessage: "ID09",
-  //           text: "https://www.youtube.com/",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now()
-  //               .subtract(const Duration(minutes: 4, seconds: 30)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID10",
-  //           text: "audios/SonTingMTP.mp3",
-  //           chatMessageType: ChatMessageType.AUDIO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID11",
-  //           text: "you",
-  //           chatMessageType: ChatMessageType.VIDEO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID12",
-  //           text:
-  //               "https://images2.minutemediacdn.com/image/upload/c_crop,w_4000,h_2250,x_0,y_96/c_fill,w_1440,ar_16:9,f_auto,q_auto,g_auto/images/GettyImages/mmsport/90min_en_international_web/01grp5mzkmtn0ef8dzjz.jpg",
-  //           chatMessageType: ChatMessageType.IMAGE,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID13",
-  //           text: "Oke",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.RECEIVED,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID14",
-  //           text: "Nha",
-  //           chatMessageType: ChatMessageType.CALL,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: false,
-  //           longTime: 230),
-  //     ],
-  //   ),
-  //   MessageData(
-  //     user: user6,
-  //     listMessages: [
-  //       Message(
-  //           idMessage: "ID01",
-  //           text: "text",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID02",
-  //           text: "I",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now()
-  //               .subtract(const Duration(minutes: 4, seconds: 30)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID03",
-  //           text: "audios/SonTingMTP.mp3",
-  //           chatMessageType: ChatMessageType.AUDIO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID04",
-  //           text:
-  //               "https://www.youtube.com/watch?v=Zi9To04PO78&list=RDZi9To04PO78&start_radio=1",
-  //           chatMessageType: ChatMessageType.VIDEO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID05",
-  //           text: "guys",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID06",
-  //           text: "Oke",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.RECEIVED,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID07",
-  //           text: "audios/SonTingMTP.mp3",
-  //           chatMessageType: ChatMessageType.AUDIO,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID08",
-  //           text: "text",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID09",
-  //           text: "I",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now()
-  //               .subtract(const Duration(minutes: 4, seconds: 30)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID10",
-  //           text: "audios/SonTingMTP.mp3",
-  //           chatMessageType: ChatMessageType.AUDIO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now()
-  //               .subtract(const Duration(minutes: 2, seconds: 30)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID11",
-  //           text: "you",
-  //           chatMessageType: ChatMessageType.VIDEO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID12",
-  //           text: "https://translate.google.com/?hl=vi",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID13",
-  //           text: "https://i.ytimg.com/vi/JF29HwVuXlc/maxresdefault.jpg",
-  //           chatMessageType: ChatMessageType.IMAGE,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.RECEIVED,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
-  //           isSeen: false),
-  //       Message(
-  //           idMessage: "ID14",
-  //           text: "Nani",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID15",
-  //           chatMessageType: ChatMessageType.CALL,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: true,
-  //           longTime: 320),
-  //     ],
-  //   ),
-  //   MessageData(
-  //     user: user8,
-  //     listMessages: [
-  //       Message(
-  //           idMessage: "ID01",
-  //           text: "text",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 4)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID02",
-  //           text: "I",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(days: 3)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID03",
-  //           text: "audios/SonTingMTP.mp3",
-  //           chatMessageType: ChatMessageType.AUDIO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(days: 3)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID04",
-  //           text: "https://www.youtube.com/watch?v=eegl7of4g-o",
-  //           chatMessageType: ChatMessageType.VIDEO,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(days: 3)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID05",
-  //           text: "guys",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SEEN,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 2)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID06",
-  //           text:
-  //               "https://assets.ayobandung.com/crop/0x0:0x0/750x500/webp/photo/2023/02/18/lee-je-hoon-285042092.jpg",
-  //           chatMessageType: ChatMessageType.IMAGE,
-  //           isSender: false,
-  //           messageStatus: MessageStatus.RECEIVED,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 1)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID07",
-  //           text: "Nha",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID08",
-  //           text: "Nha",
-  //           chatMessageType: ChatMessageType.TEXT,
-  //           isSender: true,
-  //           isRepy: true,
-  //           replyToUser: user8,
-  //           idReplyText: "ID06",
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID09",
-  //           text:
-  //               "https://assets.goal.com/v3/assets/bltcc7a7ffd2fbf71f5/blt4cf439c6adcd9edc/64365f75ecfd62869e093e8b/Luka_Modric_Real_Madrid_2022-23_(2).jpg",
-  //           chatMessageType: ChatMessageType.IMAGE,
-  //           isSender: true,
-  //           replyToUser: user8,
-  //           isRepy: true,
-  //           idReplyText: "ID06",
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID10",
-  //           text:
-  //               "https://assets.goal.com/v3/assets/bltcc7a7ffd2fbf71f5/blt4cf439c6adcd9edc/64365f75ecfd62869e093e8b/Luka_Modric_Real_Madrid_2022-23_(2).jpg",
-  //           chatMessageType: ChatMessageType.IMAGE,
-  //           isSender: true,
-  //           isDeleted: true,
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID11",
-  //           text:
-  //               "https://www.youtube.com/watch?v=x8Hv2Cst3oY&list=WL&index=9",
-  //           chatMessageType: ChatMessageType.VIDEO,
-  //           isSender: false,
-  //           isRepy: true,
-  //           replyToUser: user8,
-  //           idReplyText: "ID04",
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID12",
-  //           text:
-  //               "https://www.youtube.com/watch?v=x8Hv2Cst3oY&list=WL&index=9",
-  //           chatMessageType: ChatMessageType.VIDEO,
-  //           isSender: false,
-  //           isDeleted: true,
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID13",
-  //           text: "audios/SonTingMTP.mp3",
-  //           chatMessageType: ChatMessageType.AUDIO,
-  //           isSender: false,
-  //           isDeleted: true,
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID14",
-  //           text: "audios/SonTingMTP.mp3",
-  //           chatMessageType: ChatMessageType.AUDIO,
-  //           isSender: false,
-  //           isRepy: true,
-  //           idReplyText: "ID03",
-  //           replyToUser: user8,
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: true),
-  //       Message(
-  //           idMessage: "ID15",
-  //           text: "audios/SonTingMTP.mp3",
-  //           chatMessageType: ChatMessageType.AUDIO,
-  //           isSender: false,
-  //           isRepy: true,
-  //           idReplyText: "ID03",
-  //           replyToUser: user8,
-  //           messageStatus: MessageStatus.SENT,
-  //           dateTime: DateTime.now().subtract(const Duration(minutes: 0)),
-  //           isSeen: true),
-  //     ],
-  //   ),
-  // ];
 }
+
+
+// what is this function
+
+//  Stream<RxList<User>> convertToRxListStream(
+//       Stream<List<User>> originalStream) {
+//     final streamController = StreamController<RxList<User>>();
+
+//     originalStream.listen((userList) {
+//       final rxList = RxList<User>.from(userList);
+//       streamController.sink.add(rxList);
+//     });
+
+//     return streamController.stream;
+//   }

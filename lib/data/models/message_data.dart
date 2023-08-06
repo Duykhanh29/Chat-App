@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 
 class MessageData {
+  String? idAdmin;
+  Timestamp? createdAt;
   String? idMessageData;
   String? groupImage;
   // User? sender;
@@ -10,17 +12,21 @@ class MessageData {
   List<Message>? listMessages;
   String? chatName;
   MessageData(
-      {this.groupImage,
+      {this.idAdmin,
+      this.groupImage,
       this.listMessages,
       this.receivers,
       this.idMessageData,
-      this.chatName}) {
+      this.chatName,
+      this.createdAt}) {
     if (idMessageData == null) {
       idMessageData = Uuid().v4();
     }
   }
   factory MessageData.fromJson(Map<String, dynamic> json) {
     return MessageData(
+        idAdmin: json['idAdmin'],
+        createdAt: (json['createdAt'] as Timestamp?),
         groupImage: json['groupImage'],
         idMessageData: json['idMessageData'],
         listMessages: (json['listMessages'] as List<dynamic>)
@@ -31,6 +37,8 @@ class MessageData {
         chatName: json['chatName']);
   }
   Map<String, dynamic> toJson() => {
+        'idAdmin': idAdmin,
+        'createdAt': createdAt,
         'groupImage': groupImage,
         'idMessageData': idMessageData,
         // 'sender': sender!.toJson(),
@@ -48,24 +56,25 @@ class MessageData {
 }
 
 class Message {
+  bool isFoward;
   bool isDeleted;
   bool isSearch;
   bool? isSeen;
-  DateTime? dateTime;
+  Timestamp? dateTime;
   String? text;
   MessageStatus? messageStatus;
-  User? sender;
+  String? senderID;
   ChatMessageType? chatMessageType;
   int? longTime;
   String? idMessage;
-  bool isRepy;
+  bool isReply;
   String? idReplyText;
-  User? replyToUser;
+  String? replyToUserID;
   List<String>? seenBy;
   Message(
       {this.text,
       this.chatMessageType,
-      this.sender,
+      this.senderID,
       this.messageStatus,
       this.dateTime,
       this.isSeen,
@@ -73,18 +82,20 @@ class Message {
       this.isSearch = false,
       this.idMessage,
       this.isDeleted = false,
-      this.isRepy = false,
+      this.isReply = false,
       this.seenBy,
       this.idReplyText,
-      this.replyToUser}) {
+      this.replyToUserID,
+      this.isFoward = false}) {
     if (this.idMessage == null) {
       this.idMessage = Uuid().v4();
     }
   }
   factory Message.fromJson(Map<String, dynamic> json) {
     return Message(
+      isFoward: json['isFoward'],
       seenBy: json['seenBy'] != null ? List<String>.from(json['seenBy']) : null,
-      dateTime: (json['dateTime'] as Timestamp?)?.toDate(),
+      dateTime: (json['dateTime'] as Timestamp?),
       chatMessageType: ChatMessageType.values.firstWhere(
         (element) =>
             element.toString().split(".").last == json['chatMessageType'],
@@ -93,19 +104,17 @@ class Message {
       idMessage: json['idMessage'],
       idReplyText: json['idReplyText'],
       isDeleted: json['isDeleted'],
-      isRepy: json['isRepy'],
-      isSearch: json['isRepy'],
+      isReply: json['isReply'],
+      isSearch: json['isSearch'],
       isSeen: json['isSeen'],
-      sender: User.fromJson(json['sender']),
+      senderID: json['senderID'],
       longTime: json['longTime'],
       messageStatus: MessageStatus.values.firstWhere(
         (element) =>
             element.toString().split(".").last == json['messageStatus'],
         orElse: () => MessageStatus.SENDING,
       ),
-      replyToUser: json['replyToUser'] != null
-          ? User.fromJson(json['replyToUser'])
-          : null,
+      replyToUserID: json['replyToUserID'],
       text: json['text'],
     );
   }
@@ -116,20 +125,20 @@ class Message {
         "idMessage": idMessage,
         "idReplyText": idReplyText,
         "isDeleted": isDeleted,
-        "isRepy": isRepy,
+        "isReply": isReply,
         "isSearch": isSearch,
         "isSeen": isSeen,
-        "sender": sender!.toJson(),
+        "senderID": senderID,
         "longTime": longTime,
         "messageStatus": messageStatus?.toString().split(".").last,
-        "replyToUser": replyToUser != null ? replyToUser!.toJson() : null,
-        "text": text
+        "replyToUserID": replyToUserID,
+        "text": text,
+        "isFoward": isFoward
       };
   void showALlAttribute() {
-    print(
-        "Message: ID: $idMessage, dateTime: $dateTime, messageStatus: $messageStatus,  text: $text");
+    print("Message: ID: $idMessage,senderID: $senderID");
     print("Sender: \n");
-    sender!.showALlAttribute();
+    // sender!.showALlAttribute();
   }
 }
 
@@ -164,10 +173,16 @@ ChatMessageType getChatMessageType(String type) {
     return ChatMessageType.IMAGE;
   } else if (type == "EMOJI") {
     return ChatMessageType.GIF;
-  } else if (type == "CALL") {
-    return ChatMessageType.CALL;
+  } else if (type == "AUDIOCALL") {
+    return ChatMessageType.AUDIOCALL;
   } else if (type == "LOCATION") {
     return ChatMessageType.LOCATION;
+  } else if (type == "NOTIFICATION") {
+    return ChatMessageType.NOTIFICATION;
+  } else if (type == "MISSEDAUDIOCALL") {
+    return ChatMessageType.MISSEDAUDIOCALL;
+  } else if (type == "MISSEDVIDEOCALL") {
+    return ChatMessageType.MISSEDVIDEOCALL;
   }
   return ChatMessageType.VIDEOCALL;
 }
@@ -179,8 +194,11 @@ enum ChatMessageType {
   EMOJI,
   IMAGE,
   VIDEO,
-  CALL,
+  AUDIOCALL,
   VIDEOCALL,
   FILE,
-  LOCATION
+  LOCATION,
+  NOTIFICATION,
+  MISSEDVIDEOCALL,
+  MISSEDAUDIOCALL,
 }

@@ -9,6 +9,7 @@ import 'package:flutter/src/widgets/placeholder.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'widgets/register.dart';
+import 'package:chat_app/utils/constants/image_data.dart';
 
 class StartPage extends GetView<AuthController> {
   const StartPage({super.key});
@@ -26,15 +27,6 @@ class StartPage extends GetView<AuthController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        actions: [
-          IconButton(
-              onPressed: () async {
-                controller.signOut();
-              },
-              icon: const Icon(Icons.logout_rounded))
-        ],
-      ),
       resizeToAvoidBottomInset: false,
       body: Padding(
         padding: const EdgeInsets.all(15),
@@ -95,7 +87,7 @@ class StartPage extends GetView<AuthController> {
                     await controller.signInWithGoogle();
                   },
                   icon: Image.asset(
-                    "assets/images/google-logo.png",
+                    ImageData.googleLogo,
                     width: 22,
                     height: 22,
                   ),

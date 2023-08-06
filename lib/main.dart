@@ -5,17 +5,92 @@ import 'package:chat_app/modules/home/views/main_view.dart';
 import 'package:chat_app/modules/messeger/bindings/message_binding.dart';
 import 'package:chat_app/modules/widgets/splash.dart';
 import 'package:chat_app/routes/app_page.dart';
+import 'package:chat_app/service/notification_service.dart';
+import 'package:chat_app/utils/constants/constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:chat_app/modules/home/bindings/home_binding.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'firebase_options.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
+
+Future backgroundhandler(RemoteMessage message) async {
+  print("This is message from background");
+  print(message.notification!.body);
+  print(message.notification!.title);
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  //.then((value) => Get.put(AuthController()));
-  // Get.put(AuthController());
+  // SystemChrome.setSystemUIOverlayStyle(style)
+  if (kIsWeb) {
+    await Firebase.initializeApp(
+        options: const FirebaseOptions(
+            apiKey: "AIzaSyA0kdqm9qyrOkfl7qcDu9w7-LrVUWBB00U",
+            appId: "1:400693625268:web:bfa539631d4e51255e72e1",
+            messagingSenderId: "G-V7G0364ZHF",
+            projectId: "chat-app-9267d"));
+  }
+  await Firebase.initializeApp(
+      // options: DefaultFirebaseOptions.currentPlatform,
+      );
+
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+  // this is used for IOS devices
+  NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      sound: true,
+      criticalAlert: false,
+      provisional: false);
+  print('User granted permission: ${settings.authorizationStatus}');
+
+  final fcmToken = await FirebaseMessaging.instance.getToken();
+  print("Token: $fcmToken");
+
+  FirebaseMessaging.onBackgroundMessage(backgroundhandler);
+
+  // // Tẻminated state
+  // FirebaseMessaging.instance.getInitialMessage().then((value) {
+  //   if (value != null && value.notification != null) {
+  //     print("This message is coming from ternimated");
+  //     print(value.notification!.body);
+  //     print(value.notification!.title);
+  //   }
+  // });
+
+  // // Foreground State
+  // NotificationService.initialize();
+  // FirebaseMessaging.onMessage.listen((event) async {
+  //   if (event.notification != null) {
+  //     print("This message is coming from Foreground");
+  //     print(event.notification!.body);
+  //     print(event.notification!.title);
+  //     await NotificationService.display(event);
+  //   }
+  // });
+
+  // // background State
+  // FirebaseMessaging.onMessageOpenedApp.listen((event) {
+  //   if (event.notification != null) {
+  //     print("This message is coming from background");
+  //     print(event.notification!.body);
+  //     print(event.notification!.title);
+  //   }
+  // });
+
+  Get.lazyPut(
+    () => AuthController(),
+  );
+  await [Permission.microphone, Permission.camera].request();
   runApp(
     const MyApp(),
   );
@@ -57,5 +132,22 @@ class Home extends StatelessWidget {
 
       //home: SplashScreen(),
     );
+    // Get.put(AuthController());
+    // final auController = Get.find<AuthController>();
+    // return StreamBuilder(
+    //   builder: (context, snapshot) {
+    //     if (snapshot.connectionState == ConnectionState.none) {
+    //     } else if (snapshot.connectionState == ConnectionState.waiting) {
+    //       Center(
+    //         child: CircularProgressIndicator(),
+    //       );
+    //     } else {
+    //       if(snapshot.data!=null){
+
+    //       }
+    //     }
+    //   },
+    //   stream: FirebaseAuth.instance.authStateChanges(),
+    // );
   }
 }

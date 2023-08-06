@@ -76,7 +76,8 @@ class _ForgetPassPageState extends State<ForgetPassPage> {
                   ),
                 ),
                 onPressed: () async {
-                  await controller.sendPasswordReset(emailController.text);
+                  await controller
+                      .sendPasswordReset(emailController.text.trim());
                 },
                 child: const Text("Reset password"))
           ],

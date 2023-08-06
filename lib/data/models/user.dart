@@ -6,6 +6,8 @@ class User {
   bool story;
   String? urlImage;
   UserStatus? userStatus;
+  String? urlCoverImage;
+  String? token;
   User(
       {this.id,
       this.name,
@@ -13,30 +15,35 @@ class User {
       this.urlImage,
       this.userStatus,
       this.email,
-      this.phoneNumber});
+      this.phoneNumber,
+      this.token,
+      this.urlCoverImage});
 
   Map<String, dynamic> toJson() => {
+        "token": token,
         "name": name,
         "urlImage": urlImage,
         "email": email,
         "phoneNumber": phoneNumber,
         "id": id,
         "story": story,
-        "userStatus": userStatus?.toString().split('.').last
+        "userStatus": userStatus?.toString().split('.').last,
+        "urlCoverImage": urlCoverImage
       };
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'],
-      name: json['name'],
-      email: json['email'],
-      phoneNumber: json['email'],
-      story: json['story'],
-      userStatus: UserStatus.values.firstWhere(
-        (status) => status.toString().split('.').last == json['userStatus'],
-        orElse: () => UserStatus.PRIVACY,
-      ),
-      urlImage: json['urlImage'],
-    );
+        token: json['token'],
+        id: json['id'],
+        name: json['name'],
+        email: json['email'],
+        phoneNumber: json['email'],
+        story: json['story'],
+        userStatus: UserStatus.values.firstWhere(
+          (status) => status.toString().split('.').last == json['userStatus'],
+          orElse: () => UserStatus.PRIVACY,
+        ),
+        urlImage: json['urlImage'],
+        urlCoverImage: json['urlCoverImage']);
   }
   void showALlAttribute() {
     print("User ID: $id, name: $name, image: $urlImage,email: $email");

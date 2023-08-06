@@ -1,7 +1,10 @@
 import 'package:chat_app/modules/auth/views/startPage.dart';
 import 'package:chat_app/modules/auth/views/widgets/input_verify_number.dart';
+import 'package:chat_app/modules/auth/views/widgets/verify_email_page.dart';
 import 'package:chat_app/modules/home/views/main_view.dart';
 import 'package:chat_app/modules/profile/views/widgets/profile_view.dart';
+import 'package:chat_app/service/services_method.dart';
+import 'package:chat_app/service/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -25,8 +28,20 @@ class AuthController extends GetxController {
   RxBool isLogin = false.obs;
   Rx<userModel.User?> currentUser = Rx<userModel.User?>(null);
   RxBool isGGLogin = false.obs;
+  RxBool isEMailVerified = false.obs;
+  RxBool isLoad = false.obs;
+  RxBool isUpdateInfor = false.obs;
+  RxBool isPhone = false.obs;
+  void changeIsUpdateInforToTrue() {
+    isUpdateInfor.value = true;
+  }
+
+  void resetIsUpdateInfor() {
+    isUpdateInfor.value = false;
+  }
+
   @override
-  void onInit() {
+  void onInit() async {
     // TODO: implement onInit
     print("Go ahead");
     emailController = TextEditingController().obs;
@@ -42,7 +57,9 @@ class AuthController extends GetxController {
       user.bindStream(firebaseAuth
           .userChanges()); // our user can be changed by logout login ,... It listen the change of user
       //print("Name nha: ${user.value!.displayName}");
-      updateUser(user.value!);
+      await updateUser(user.value!).whenComplete(() {
+        print("Fine");
+      });
 
       // ever function used for observe changes of user and perform a certain activity whenever user changes
     }
@@ -50,17 +67,34 @@ class AuthController extends GetxController {
     updateTextController(currentUser);
   }
 
+  @override
+  void onClose() {
+    // TODO: implement onClose
+    emailController.value.dispose();
+    passwordControllerRegister.value.dispose();
+    phoneController.value.dispose();
+    nameController.value.dispose();
+    super.onClose();
+  }
+
+  @override
+  void onReady() {
+    // TODO: implement onReady
+    super.onReady();
+  }
+
   void updateUserInAuth(
       {String? name, String? email, String? photoUrl, String? phone}) async {
     User? user = firebaseAuth.currentUser;
     if (user != null) {
-      var displayName = name != null ? name : user.displayName;
-      var photoURL = photoUrl != null ? photoUrl : user.photoURL;
-      var phoneNumber = phone != null ? phone : user.phoneNumber;
-      var newEmail = email != null ? email : user.email;
+      var displayName = name ?? user.displayName;
+      var photoURL = photoUrl ?? user.photoURL;
+      Object? phoneNumber = phone ?? user.phoneNumber;
+      var newEmail = email ?? user.email;
       await user.updateDisplayName(displayName);
       await user.updateEmail(newEmail!);
       await user.updatePhotoURL(photoURL);
+      // await user.updatePhoneNumber(phoneNumber);
       // await user.updatePhoneNumber(phoneNumber);
       print(
           "received value 2: displayName: $displayName, photoURL: $photoURL, phoneNumber:$phoneNumber, newEmail: $newEmail ");
@@ -68,17 +102,66 @@ class AuthController extends GetxController {
     }
   }
 
-  void updateUser(User user) {
+  Future<void> sendVerificationCodeToPhoneNumber(String phoneNumber) async {
+    try {
+      await firebaseAuth.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          // Automatic verification (e.g., on Android with auto-read SMS)
+          // In this example, we'll assume this case won't happen
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          print("Verification failed: ${e.message}");
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          print("Code sent to $phoneNumber");
+          // setState(() {
+          //   _verificationId = verificationId;
+          // });
+          print("verificationId: $verificationId");
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          print("Auto retrieval timeout");
+        },
+      );
+    } catch (e) {
+      print("Error sending verification code: $e");
+    }
+  }
+
+  Future updateUser(User user) async {
     currentUser.value = userModel.User(
-        email: user.email,
-        name: user.displayName ?? "No name",
-        id: user.uid,
-        phoneNumber: user.phoneNumber,
-        urlImage: user.photoURL ??
-            "https://t4.ftcdn.net/jpg/03/59/58/91/360_F_359589186_JDLl8dIWoBNf1iqEkHxhUeeOulx0wOC5.jpg",
-        userStatus: userModel.UserStatus.OFFLINE);
+      email: user.email,
+      name: user.displayName ?? "User",
+      id: user.uid,
+      phoneNumber: user.phoneNumber,
+      urlImage: user.photoURL ??
+          "https://t4.ftcdn.net/jpg/03/59/58/91/360_F_359589186_JDLl8dIWoBNf1iqEkHxhUeeOulx0wOC5.jpg",
+      userStatus: userModel.UserStatus.OFFLINE,
+      // urlCoverImage: newUser!.urlCoverImage ??
+      //     "https://wallpaperaccess.com/full/393735.jpg"
+    );
+    userModel.User? newUser = await getDataFromFirebase(user);
+    if (newUser != null) {
+      currentUser.value!.urlCoverImage = newUser.urlCoverImage;
+    } else {
+      currentUser.value!.urlCoverImage =
+          "https://wallpaperaccess.com/full/393735.jpg";
+    }
     currentUser.value!.showALlAttribute();
     updateTextController(currentUser);
+  }
+
+  Future<userModel.User?> getDataFromFirebase(User user) async {
+    DocumentSnapshot snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+    if (snapshot.exists) {
+      final data = snapshot.data() as Map<String, dynamic>;
+      userModel.User modelUser = userModel.User.fromJson(data);
+      return modelUser;
+    }
   }
 
   void updateTextController(Rx<userModel.User?> currentUser) {
@@ -105,11 +188,22 @@ class AuthController extends GetxController {
 
   // I still don't understand when this function is called in some cases
   initialScreen(User? user) {
-    // updateUser(user!);
-    if (user == null) {
-      Get.offAll(() => const StartPage());
+    if (isGGLogin.value) {
+      if (user == null) {
+        Get.offAll(() => const StartPage());
+      } else {
+        Get.offAll(() => MainView());
+      }
     } else {
-      Get.offAll(() => MainView());
+      if (user != null && user.emailVerified && isUpdateInfor.value == true) {
+        // Get.to((ProfileView));
+      } else if (user != null && user.emailVerified) {
+        Get.offAll(() => MainView());
+      } else if (user != null && !user.emailVerified) {
+        Get.offAll(() => const VerifyEmailPage());
+      } else {
+        Get.offAll(() => const StartPage());
+      }
     }
   }
 
@@ -129,7 +223,7 @@ class AuthController extends GetxController {
             ),
             backgroundColor: Colors.redAccent);
       } else {
-        updateUser(result.user!);
+        await updateUser(result.user!); //HERE
 
         isLogin.value = true;
         //  update();
@@ -145,13 +239,86 @@ class AuthController extends GetxController {
     }
   }
 
-//   ever(user, initialScreen);
+  void changeEmailVerified() {
+    isEMailVerified.value = !isEMailVerified.value;
+  }
+
+  Future<bool> sendEmailVerification(User? user) async {
+    if (user != null && !user.emailVerified) {
+      try {
+        await user.sendEmailVerification();
+        await user.reload();
+        return true;
+      } catch (e) {
+        print('Lỗi khi gửi email xác minh: $e');
+        return false;
+      }
+    }
+    return false;
+  }
+
+  Future sendVerificationEmail(User? user) async {
+    try {
+      await user!.sendEmailVerification();
+      //   await user.reload();
+      if (user.emailVerified) {
+        isLoad.value = false;
+      } else {
+        isLoad.value = true;
+      }
+    } catch (e) {}
+  }
+
+  bool isEmailVerified(User? user) {
+    return user?.emailVerified ?? false;
+  }
+
   // create user == register with email & pass
+
+  Future<bool> sendEmailVerificationLink(String email) async {
+    String emailLink = 'https://www.example.com/completeSignUp?email=$email';
+    var actionCodeSettings = ActionCodeSettings(
+      url: emailLink,
+      handleCodeInApp: true,
+      iOSBundleId: 'com.example.ios',
+      androidPackageName: 'com.example.android',
+      androidInstallApp: true,
+      androidMinimumVersion: '12',
+      dynamicLinkDomain: 'example.page.link',
+    );
+
+    FirebaseAuth.instance
+        .sendSignInLinkToEmail(
+            email: email, actionCodeSettings: actionCodeSettings)
+        .catchError((onError) {
+      return false;
+    }).then((value) {
+      return true;
+    });
+    return false;
+  }
+
+  Future addUserToFirebase(User? user) async {
+    await updateUser(user!);
+
+    if (currentUser.value == null) {
+      print("No way");
+    } else {
+      // if (result.user!.emailVerified) {
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(currentUser.value!.id)
+          .set(currentUser.toJson());
+      isLogin.value = true;
+    }
+  }
+
   Future createUserWithEmailAndPassword(
       {required String email, required String password}) async {
     try {
       UserCredential result = await firebaseAuth.createUserWithEmailAndPassword(
           email: email, password: password);
+
       if (result == null) {
         Get.snackbar("About User", "User message",
             snackPosition: SnackPosition.BOTTOM,
@@ -164,6 +331,8 @@ class AuthController extends GetxController {
         if (existedUserCheckWithPhoneOrEmail(
                 phone: result.user!.phoneNumber, email: result.user!.email) ==
             true) {
+          result.user!.delete();
+          firebaseAuth.signOut();
           Get.snackbar("About User", "User message",
               snackPosition: SnackPosition.BOTTOM,
               titleText: const Text("Notice"),
@@ -172,16 +341,45 @@ class AuthController extends GetxController {
               ),
               backgroundColor: Colors.redAccent);
         } else {
-          updateUser(result.user!);
-          await FirebaseFirestore.instance
-              .collection("users")
-              .doc(currentUser.value!.id)
-              .set(currentUser.toJson());
-          isLogin.value = true;
-          Get.snackbar("About User", "User message",
-              snackPosition: SnackPosition.BOTTOM,
-              titleText: const Text("Account create successfully"),
-              backgroundColor: Colors.redAccent);
+          await addUserToFirebase(result.user!); // HERE
+          // create a new document in friend
+          await ServiceMethod.createFriendForNewUser(currentUser.value);
+          // final value = await sendEmailVerification(result.user);
+          // if (value) {
+          // bool isVerified = isEmailVerified(result.user!);
+          // bool isVerified =
+          //     await sendEmailVerificationLink(result.user!.email!);
+          // if (isVerified) {
+          // print('Email đã được xác minh');
+          // updateUser(result.user!);
+
+          // if (currentUser.value == null) {
+          //   print("No way");
+          // } else {
+          //   // if (result.user!.emailVerified) {
+          //   await FirebaseFirestore.instance
+          //       .collection("users")
+          //       .doc(currentUser.value!.id)
+          //       .set(currentUser.toJson());
+          //   isLogin.value = true;
+          //   await result.user!.reload();
+          // }
+
+          // Get.snackbar("About User", "User message",
+          //     snackPosition: SnackPosition.BOTTOM,
+          //     titleText: const Text("Account create successfully"),
+          //     backgroundColor: Colors.redAccent);
+          // }
+          // } else {
+          //   await firebaseAuth.currentUser!.delete();
+          //   await firebaseAuth.signOut();
+          //   print('Email chưa được xác minh');
+          // }
+          // } else {
+          //   await firebaseAuth.currentUser!.delete();
+          //   await firebaseAuth.signOut();
+          //   print("Your road finish at the moment");
+          // }
         }
       }
     } catch (e) {
@@ -209,19 +407,51 @@ class AuthController extends GetxController {
     }
   }
 
+// password
+  Future changePassword(
+      {required String? newPass,
+      required String? oldPass,
+      required String email}) async {
+    final cre = EmailAuthProvider.credential(email: email, password: oldPass!);
+    await firebaseAuth.currentUser!
+        .reauthenticateWithCredential(cre)
+        .then((value) => firebaseAuth.currentUser!.updatePassword(newPass!))
+        .catchError((err) {
+      print("An error occured: $email");
+    });
+  }
+
+  Future<bool> isValidCurrentPassword(String currentPassword) async {
+    try {
+      final user = firebaseAuth.currentUser;
+      final credential = EmailAuthProvider.credential(
+          email: user!.email!, password: currentPassword);
+      await firebaseAuth.currentUser!.reauthenticateWithCredential(credential);
+      print("isValidCurrentPassword: true");
+      return true;
+    } catch (e) {
+      print("Error: $e");
+      print("isValidCurrentPassword: false");
+      return false;
+    }
+  }
+
   //sign out
   Future signOut() async {
     await firebaseAuth.signOut();
+    await _googleSignIn.signOut();
     currentUser.value = null;
     user.value = null;
-    await _googleSignIn.signOut();
+    isLogin.value = false;
     isGGLogin.value = false;
+    isEMailVerified.value = false;
     // update();
   }
 
   Future signOutWithGG() async {
     await firebaseAuth.signOut();
     _googleSignIn.signOut();
+    isLogin.value = false;
     isGGLogin.value = false;
   }
 
@@ -247,21 +477,26 @@ class AuthController extends GetxController {
               backgroundColor: Colors.grey[800],
             );
           } else {
-            updateUser(userCredential.user!);
+            isLogin.value = true;
+            await updateUser(userCredential.user!); // HERE
             var result = await existedUserCheckWithPhoneOrEmail(
                 email: userCredential.user!.email);
             if (result == false) {
               await FirebaseFirestore.instance
                   .collection("users")
                   .doc(currentUser.value!.id)
-                  .set(currentUser.toJson());
+                  .set(currentUser.toJson())
+                  .whenComplete(() {
+                Get.snackbar(
+                  "Notice",
+                  "Sign in successful",
+                  duration: const Duration(seconds: 2),
+                  backgroundColor: Colors.grey[800],
+                );
+              });
+              //set a document in friends collection
+              ServiceMethod.createFriendForNewUser(currentUser.value);
             }
-            Get.snackbar(
-              "Notice",
-              "Sign in successful",
-              duration: const Duration(seconds: 2),
-              backgroundColor: Colors.grey[800],
-            );
 
             // before add user to database, we need to check whether this user already in the database to avoid create many records with the same user
 
@@ -388,6 +623,7 @@ class AuthController extends GetxController {
         .get()
         .then((value) => value.docs.forEach((element) {
               userModel.User user = userModel.User(
+                token: element.data()['token'],
                 id: element.data()['id'],
                 name: element.data()['name'],
                 email: element.data()['email'],
@@ -396,6 +632,7 @@ class AuthController extends GetxController {
                 urlImage: element.data()['urlImage'],
                 userStatus:
                     userModel.getUserStatus(element.data()['userStatus']),
+                urlCoverImage: element.data()['urlCoverImage'],
               );
               list.add(user);
             }));
@@ -411,6 +648,7 @@ class AuthController extends GetxController {
       List<userModel.User> list = [];
       firebaseFirestore.docs.forEach((element) {
         userModel.User modelUser = userModel.User(
+          token: element.data()['token'],
           id: element.data()['id'],
           name: element.data()['name'],
           email: element.data()['email'],
@@ -418,6 +656,7 @@ class AuthController extends GetxController {
           story: element.data()['story'],
           urlImage: element.data()['urlImage'],
           userStatus: userModel.getUserStatus(element.data()['userStatus']),
+          urlCoverImage: element.data()['urlCoverImage'],
         );
         list.add(modelUser);
       });
@@ -433,13 +672,22 @@ class AuthController extends GetxController {
 
   // edit current user
   Future editUser(
-      {String? email, String? phone, String? name, String? urlImage}) async {
-    var displayName = name!.isNotEmpty ? name : currentUser.value!.name;
-    var photoURL = urlImage != null ? urlImage : currentUser.value!.urlImage;
-    var phoneNumber = phone! != null ? phone : currentUser.value!.phoneNumber;
-    var newEmail = email! != null ? email : currentUser.value!.email;
+      {String? email,
+      String? phone,
+      String? name,
+      String? urlImage,
+      String? coverImage}) async {
+    var displayName = name ?? currentUser.value!.name;
+    var photoURL = urlImage ?? currentUser.value!.urlImage;
+    if (phone != null) {
+      await sendVerificationCodeToPhoneNumber("+84$phone");
+    }
+    var phoneNumber = phone ?? currentUser.value!.phoneNumber;
+    var newEmail = email ?? currentUser.value!.email;
+    var newCoverImage = coverImage ?? currentUser.value!.urlCoverImage;
     print(
         "received value: displayName: $displayName, photoURL: $photoURL, phoneNumber:$phoneNumber, newEmail: $newEmail ");
+
     userModel.User newUser = userModel.User(
         userStatus: currentUser.value!.userStatus,
         email: newEmail,
@@ -447,15 +695,49 @@ class AuthController extends GetxController {
         name: displayName,
         phoneNumber: phoneNumber,
         story: currentUser.value!.story,
-        urlImage: photoURL);
+        urlImage: photoURL,
+        urlCoverImage: newCoverImage);
     await FirebaseFirestore.instance
         .collection("users")
         .doc(newUser.id)
         .update(newUser.toJson());
     currentUser.value = newUser;
-    updateTextController(currentUser);
+    updateTextController(currentUser); // HERE
     updateUserInAuth(
-        email: email, name: name, phone: phone, photoUrl: urlImage);
+        email: email, name: name, phone: phone, photoUrl: urlImage); //HERE
+  }
+
+  Future updateUserToFirebase(
+      {String? email,
+      String? phone,
+      String? name,
+      String? urlImage,
+      String? token,
+      required String uid,
+      String? urlCoverImage}) async {
+    String? newEmail = email ?? currentUser.value!.email;
+    String? phoneNumber = phone ?? currentUser.value!.phoneNumber;
+    String? displayName = name ?? currentUser.value!.name;
+    String? urlPhoto = urlImage ?? currentUser.value!.urlImage;
+    String? coverImage = urlCoverImage ?? currentUser.value!.urlCoverImage;
+    String? fcmToken = token ?? currentUser.value!.token;
+    await FirebaseFirestore.instance.collection('users').doc(uid).update({
+      "name": displayName,
+      "email": newEmail,
+      "phoneNumber": phoneNumber,
+      "urlImage": urlPhoto,
+      "urlCoverImage": coverImage,
+      "token": fcmToken
+    }).whenComplete(() async {
+      await editUser(
+          email: newEmail,
+          name: displayName,
+          phone: phoneNumber,
+          coverImage: coverImage,
+          urlImage: urlPhoto);
+    }).catchError((error) {
+      print("Occured an error: $error");
+    });
   }
 
   void resetEditUser() {
@@ -474,5 +756,21 @@ class AuthController extends GetxController {
     } else {
       nameController.value.text = currentUser.value!.name!;
     }
+  }
+
+  void updatePassword(String newPassword) async {
+    User? currentUser = firebaseAuth.currentUser;
+    try {
+      await currentUser!.updatePassword(newPassword);
+      print("Update successfully");
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  Future setToken(String token, String uid) async {
+    final docRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final data = {'token': token};
+    await docRef.update(data);
   }
 }

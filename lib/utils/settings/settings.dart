@@ -1,0 +1,4 @@
+const appID = "250e746937a543d68ec0e6e3ac0679cb";
+const token =
+    "007eJxTYGhfOcdlwYbNTtsmOxldWrCR+VGp1IIUAel3J2WD9I6dnL1VgcHI1CDV3MTM0tg80dTEOMXMIjXZINUs1Tgx2cDM3DI56ULFiZSGQEaGL7VZrIwMEAjiMzPklmQwMAAAWp0gLQ==9";
+const channelId = "mth";

@@ -1,3 +1,4 @@
+import 'package:chat_app/modules/messeger/views/widgets/components/view_media_file_link.dart';
 import 'package:chat_app/modules/profile/views/widgets/settings_widgets/chat_settings.dart';
 import 'package:chat_app/modules/profile/views/widgets/settings_widgets/help_centre.dart';
 import 'package:chat_app/modules/profile/views/widgets/settings_widgets/language.dart';
@@ -15,6 +16,7 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text("Settings"),
       ),
