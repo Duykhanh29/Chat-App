@@ -150,7 +150,7 @@ class MessageTile extends GetView<MessageController> {
     final dataController = Get.find<DataController>();
     final listAllUser = dataController.listAllUser.value;
     final currentUser = authController.currentUser.value;
-
+    User? sender = CommonMethods.getUserFromID(listAllUser, message.senderID);
     return SwipeTo(
       onLeftSwipe: () {},
       onRightSwipe: () {
@@ -190,10 +190,8 @@ class MessageTile extends GetView<MessageController> {
                 child: Obx(
                   () {
                     final listUser = controller.relatedUserToCurrentUser.value;
-                    User? sender;
+                    // User? sender;
                     if (listAllUser != null && listAllUser.isNotEmpty) {
-                      sender = CommonMethods.getUserFromID(
-                          listAllUser, message.senderID);
                       return CircleAvatar(
                         radius: 15,
                         backgroundImage: NetworkImage(
@@ -223,6 +221,7 @@ class MessageTile extends GetView<MessageController> {
                 margin: message.senderID != currentUser.id
                     ? const EdgeInsets.only(top: 10, left: 2)
                     : const EdgeInsets.only(top: 10),
+                // decoration: BoxDecoration(color: Colors.deepOrangeAccent),
                 child: FittedBox(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -232,11 +231,23 @@ class MessageTile extends GetView<MessageController> {
                       //   DateFormat.jm().format(message.dateTime!),
                       //   style: TextStyle(fontSize: 11),
                       // ),
-                      message.isDeleted
-                          ? (Validators.differenceHours(message) < 3
-                              ? DeletedWidget()
-                              : const DeletedForYou())
-                          : messageContain(message),
+                      if (message.isDeleted) ...{
+                        if (Validators.differenceHours(message) < 3) ...{
+                          DeletedWidget()
+                        } else ...{
+                          const DeletedForYou()
+                        }
+                      } else ...{
+                        // if (message.isFoward != null && message.isFoward) ...{
+                        //   Center(
+                        //     child: Text("${sender!.name} forwarded a message"),
+                        //   ),
+                        //   const SizedBox(
+                        //     height: 1,
+                        //   ),
+                        // },
+                        messageContain(message),
+                      }
                     ],
                   ),
                 ),

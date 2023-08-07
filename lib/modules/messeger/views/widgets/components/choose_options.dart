@@ -1,3 +1,4 @@
+import 'package:chat_app/modules/messeger/views/widgets/components/forward_screen.dart';
 import 'package:chat_app/utils/helpers/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -119,6 +120,11 @@ class ChooseOptions extends GetView<MessageController> {
               },
               child: const Text("Copy"),
             ),
+            TextButton(
+                onPressed: () {
+                  Get.to(() => ForwardScreen(message: message));
+                },
+                child: const Text("Forward")),
             TextButton(
                 onPressed: () async {
                   await showSheet(context, controller);

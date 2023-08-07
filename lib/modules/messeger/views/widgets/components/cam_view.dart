@@ -72,62 +72,45 @@ class CameraViewPage extends StatelessWidget {
             ),
             Positioned(
               bottom: 0,
+              left: 160,
               child: Container(
                 color: Colors.black38,
                 width: MediaQuery.of(context).size.width,
                 padding: EdgeInsets.symmetric(vertical: 5, horizontal: 8),
-                child: TextFormField(
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
+                child: CircleAvatar(
+                  radius: 27,
+                  backgroundColor: Colors.tealAccent[700],
+                  child: IconButton(
+                    onPressed: () async {
+                      await storage.uploadFile(
+                          path, fileName, messageData.idMessageData!, 'images');
+                      String url = await storage.downloadURL(
+                          fileName, messageData.idMessageData!, 'images');
+                      Message message = Message(
+                          text: url,
+                          chatMessageType: ChatMessageType.IMAGE,
+                          isSeen: false,
+                          messageStatus: messageStatus,
+                          dateTime: Timestamp.now(),
+                          senderID: sender!.id);
+                      message.showALlAttribute();
+                      controller.sendAMessage(message, messageData);
+                      // Get.offUntil(
+                      //   GetPageRoute(
+                      //       page: () => ChattingPage(),
+                      //       settings: RouteSettings(
+                      //           arguments: messageData)),
+                      //   (route) =>
+                      //       route.settings.name != '/chattingPage',
+                      // );
+                      Get.back();
+                      Get.back();
+                    },
+                    icon: const Icon(
+                      Icons.telegram_outlined,
+                      color: Colors.blue,
+                    ),
                   ),
-                  maxLines: 6,
-                  minLines: 1,
-                  decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: "Add Caption....",
-                      prefixIcon: Icon(
-                        Icons.add_photo_alternate,
-                        color: Colors.white,
-                        size: 27,
-                      ),
-                      hintStyle: TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                      ),
-                      suffixIcon: CircleAvatar(
-                          radius: 27,
-                          backgroundColor: Colors.tealAccent[700],
-                          child: IconButton(
-                              onPressed: () async {
-                                await storage.uploadFile(path, fileName,
-                                    messageData.idMessageData!, 'images');
-                                String url = await storage.downloadURL(fileName,
-                                    messageData.idMessageData!, 'images');
-                                Message message = Message(
-                                    text: url,
-                                    chatMessageType: ChatMessageType.IMAGE,
-                                    isSeen: false,
-                                    messageStatus: messageStatus,
-                                    dateTime: Timestamp.now(),
-                                    senderID: sender!.id);
-                                message.showALlAttribute();
-                                controller.sendAMessage(message, messageData);
-                                // Get.offUntil(
-                                //   GetPageRoute(
-                                //       page: () => ChattingPage(),
-                                //       settings: RouteSettings(
-                                //           arguments: messageData)),
-                                //   (route) =>
-                                //       route.settings.name != '/chattingPage',
-                                // );
-                                Get.back();
-                                Get.back();
-                              },
-                              icon: const Icon(
-                                Icons.telegram_outlined,
-                                color: Colors.blue,
-                              )))),
                 ),
               ),
             ),

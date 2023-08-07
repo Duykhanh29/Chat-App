@@ -153,12 +153,12 @@ class AddMember extends StatelessWidget {
                         messageController.sendAMessage(msg, messageData);
 
                         // send to others
-                        CommonMethods.sendNotifications(
-                            receivers,
-                            currentUser,
-                            receiver,
-                            messageData,
-                            "${user.name} was added by ${currentUser.name}");
+                        // CommonMethods.sendNotifications(
+                        //     receivers,
+                        //     currentUser,
+                        //     receiver,
+                        //     messageData,
+                        //     "${user.name} was added by ${currentUser.name}");
                       }
                       // if (targetUser != null) {
                       //   await groupController.addAnUserToGroup(

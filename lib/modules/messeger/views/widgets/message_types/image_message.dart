@@ -1,4 +1,6 @@
+import 'package:chat_app/data/common/methods.dart';
 import 'package:chat_app/data/models/user.dart';
+import 'package:chat_app/modules/home/controllers/data_controller.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
 import 'package:chat_app/modules/messeger/views/widgets/message_tile.dart';
 import 'package:photo_view/photo_view.dart';
@@ -24,6 +26,9 @@ class ImageMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<MessageController>();
+    final dataController = Get.find<DataController>();
+    final listAllUser = dataController.listAllUser.value;
+    User? sender = CommonMethods.getUserFromID(listAllUser, message.senderID);
     Message? replyMessage;
     if (message.isReply) {
       replyMessage = controller.findMessageFromIdAndUser(
@@ -34,8 +39,12 @@ class ImageMessage extends StatelessWidget {
     return Container(
       width: MediaQuery.of(context).size.width * 0.75,
       height: message.isReply
-          ? MediaQuery.of(context).size.width * 0.6
-          : MediaQuery.of(context).size.width * 0.35,
+          ? (message.isFoward != null && message.isFoward)
+              ? MediaQuery.of(context).size.width * 0.64
+              : MediaQuery.of(context).size.width * 0.6
+          : (message.isFoward != null && message.isFoward)
+              ? MediaQuery.of(context).size.width * 0.39
+              : MediaQuery.of(context).size.width * 0.35,
       child: Column(
         mainAxisAlignment: message.senderID != currentUser.id
             ? MainAxisAlignment.start
@@ -44,6 +53,18 @@ class ImageMessage extends StatelessWidget {
             ? CrossAxisAlignment.start
             : CrossAxisAlignment.end,
         children: [
+          if (message.isFoward != null && message.isFoward) ...{
+            Align(
+              alignment: Alignment.topRight,
+              child: Text(
+                "${sender!.name} forwarded a message",
+                style: const TextStyle(fontSize: 11),
+              ),
+            ),
+            const SizedBox(
+              height: 1,
+            )
+          },
           if (message.isReply) ...{
             BuildReplyMessage(
                 currentUser: currentUser,
@@ -56,7 +77,9 @@ class ImageMessage extends StatelessWidget {
                 : MainAxisAlignment.end,
             children: [
               if (message.senderID == currentUser.id) ...{
-                SharedIcon(size: MediaQuery.of(context).size.width * 0.35),
+                SharedIcon(
+                    size: MediaQuery.of(context).size.width * 0.35,
+                    message: message),
                 const SizedBox(
                   width: 15,
                 ),
@@ -112,7 +135,10 @@ class ImageMessage extends StatelessWidget {
                 const SizedBox(
                   width: 15,
                 ),
-                SharedIcon(size: MediaQuery.of(context).size.width * 0.35)
+                SharedIcon(
+                  size: MediaQuery.of(context).size.width * 0.35,
+                  message: message,
+                )
               }
             ],
           ),

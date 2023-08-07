@@ -351,8 +351,14 @@ class CommonMethods {
         CommonMethods.getReceiversExceptCurrentUser(receivers, currentUser);
     if (receiver != null) {
       if (receiver.id != currentUser!.id) {
-        NotificationService.sendPushMessage([receiver.token!], body,
-            currentUser.name!, Paths.CHATTINGPAGE, messageData!.idMessageData!);
+        if (receiver.token != null) {
+          NotificationService.sendPushMessage(
+              [receiver.token!],
+              body,
+              currentUser.name!,
+              Paths.CHATTINGPAGE,
+              messageData!.idMessageData!);
+        }
       }
     } else {
       tokens = CommonMethods.getTokens(listReceivers);

@@ -1,4 +1,6 @@
+import 'package:chat_app/data/common/methods.dart';
 import 'package:chat_app/data/models/user.dart';
+import 'package:chat_app/modules/home/controllers/data_controller.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
 import 'package:chat_app/modules/messeger/views/widgets/message_tile.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +27,8 @@ class VideoMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<MessageController>();
+    final dataController = Get.find<DataController>();
+    final listAllUser = dataController.listAllUser.value;
     Message?
         replyMessage; // this is a reply message to show in the main message
     if (message.isReply) {
@@ -33,12 +37,17 @@ class VideoMessage extends StatelessWidget {
       print(
           "New Value at ${message.idMessage}: ID: ${replyMessage.idMessage} text: ${replyMessage.text} type: ${replyMessage.chatMessageType}");
     }
-    if (message.isReply) {
+    if (message.isReply && (message.isFoward != null && message.isFoward)) {
+      size = 230;
+    } else if (message.isReply) {
       size = 220;
+    } else if (message.isFoward != null && message.isFoward) {
+      size = 150;
     } else {
       size = 140;
     }
     print("seiz: l$size");
+    User? sender = CommonMethods.getUserFromID(listAllUser, message.senderID);
     return Container(
       width: MediaQuery.of(context).size.width * 0.75,
       //   decoration: BoxDecoration(color: Colors.red),
@@ -51,6 +60,18 @@ class VideoMessage extends StatelessWidget {
             ? CrossAxisAlignment.start
             : CrossAxisAlignment.end,
         children: [
+          if (message.isFoward != null && message.isFoward) ...{
+            Align(
+              alignment: Alignment.topRight,
+              child: Text(
+                "${sender!.name} forwarded a message",
+                style: const TextStyle(fontSize: 11),
+              ),
+            ),
+            const SizedBox(
+              height: 1,
+            )
+          },
           if (message.isReply) ...{
             BuildReplyMessage(
                 currentUser: currentUser,
@@ -64,7 +85,7 @@ class VideoMessage extends StatelessWidget {
                   : MainAxisAlignment.end,
               children: [
                 if (message.senderID == currentUser.id) ...{
-                  SharedIcon(size: size),
+                  SharedIcon(size: size, message: message),
                   const SizedBox(
                     width: 10,
                   ),
@@ -91,7 +112,7 @@ class VideoMessage extends StatelessWidget {
                   const SizedBox(
                     width: 10,
                   ),
-                  SharedIcon(size: size)
+                  SharedIcon(size: size, message: message)
                 }
               ],
             ),
@@ -165,7 +186,7 @@ class _VideoPlayState extends State<VideoPlay> {
               alignment: Alignment.center,
               children: [
                 AspectRatio(
-                  aspectRatio: 1.55,
+                  aspectRatio: 1.7,
                   child: VideoPlayer(controller),
                 ),
                 Positioned.fill(

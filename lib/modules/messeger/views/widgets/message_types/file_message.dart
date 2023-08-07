@@ -50,7 +50,7 @@ class FileMessage extends StatelessWidget {
               : MainAxisAlignment.end,
           children: [
             if (message.senderID == currentUser.id) ...{
-              SharedIcon(size: size),
+              SharedIcon(size: size, message: message),
               const SizedBox(
                 width: 15,
               ),
@@ -95,7 +95,7 @@ class FileMessage extends StatelessWidget {
               const SizedBox(
                 width: 15,
               ),
-              SharedIcon(size: size)
+              SharedIcon(size: size, message: message)
             }
           ],
         ),

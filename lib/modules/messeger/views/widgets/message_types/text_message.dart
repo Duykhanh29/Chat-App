@@ -1,5 +1,7 @@
+import 'package:chat_app/data/common/methods.dart';
 import 'package:chat_app/data/models/message_data.dart';
 import 'package:chat_app/data/models/user.dart';
+import 'package:chat_app/modules/home/controllers/data_controller.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
 import 'package:chat_app/modules/messeger/views/widgets/message_tile.dart';
 import 'package:flutter/material.dart';
@@ -64,6 +66,8 @@ class TextMessage extends GetView<MessageController> {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<MessageController>();
+    final dataController = Get.find<DataController>();
+    final listAllUser = dataController.listAllUser.value;
     print("In text message\n");
     message.showALlAttribute();
     print("And reccent User: \n");
@@ -75,6 +79,7 @@ class TextMessage extends GetView<MessageController> {
       print(
           "New Value at ${message.idMessage}: ID: ${replyMessage.idMessage} text: ${replyMessage.text} type: ${replyMessage.chatMessageType}");
     }
+    User? sender = CommonMethods.getUserFromID(listAllUser, message.senderID);
     return Validators.isUrl(message.text!)
         ? Obx(() {
             return LinkURL(
@@ -84,6 +89,7 @@ class TextMessage extends GetView<MessageController> {
               idMessageData: idMessageData,
               message: message,
               replyMessage: replyMessage,
+              sender: sender,
             );
           })
         : Obx(() => TextMsg(
@@ -93,6 +99,7 @@ class TextMessage extends GetView<MessageController> {
               idMessageData: idMessageData,
               message: message,
               replyMessage: replyMessage,
+              sender: sender,
             ));
   }
 }
@@ -105,12 +112,14 @@ class LinkURL extends StatefulWidget {
       required this.message,
       required this.replyMessage,
       required this.controller,
-      required this.color});
+      required this.color,
+      required this.sender});
   User currentUser;
   final Message message;
   String idMessageData;
   Message? replyMessage;
   MessageController controller;
+  User? sender;
 
   Color color;
 
@@ -189,16 +198,22 @@ class _LinkURLState extends State<LinkURL> {
   double size = 220;
   @override
   Widget build(BuildContext context) {
-    if (widget.message.isReply) {
+    if (widget.message.isReply &&
+        (widget.message.isFoward != null && widget.message.isFoward)) {
+      size = 315;
+    } else if (widget.message.isReply) {
       size = 300;
+    } else if (widget.message.isFoward != null && widget.message.isFoward) {
+      size = 230;
     } else {
       size = 220;
     }
+
     return Container(
       // height: widget.message.isRepy ? 300 : 300,
       constraints: BoxConstraints(
         //   maxWidth: MediaQuery.of(context).size.width * 0.85,
-        maxHeight: widget.message.isReply ? 300 : 220,
+        maxHeight: size,
       ),
       width: MediaQuery.of(context).size.width * 0.75,
       // decoration: BoxDecoration(color: Colors.brown),
@@ -210,6 +225,18 @@ class _LinkURLState extends State<LinkURL> {
             ? CrossAxisAlignment.start
             : CrossAxisAlignment.end,
         children: [
+          if (widget.message.isFoward != null && widget.message.isFoward) ...{
+            Align(
+              alignment: Alignment.topRight,
+              child: Text(
+                "${widget.sender!.name} forwarded a message",
+                style: const TextStyle(fontSize: 11),
+              ),
+            ),
+            const SizedBox(
+              height: 1,
+            )
+          },
           if (widget.message.isReply) ...{
             BuildReplyMessage(
                 currentUser: widget.currentUser,
@@ -228,7 +255,7 @@ class _LinkURLState extends State<LinkURL> {
                       : CrossAxisAlignment.end,
               children: [
                 if (widget.message.senderID == widget.currentUser.id) ...{
-                  SharedIcon(size: size),
+                  SharedIcon(size: size, message: widget.message),
                   const SizedBox(
                     width: 10,
                   ),
@@ -242,7 +269,7 @@ class _LinkURLState extends State<LinkURL> {
                   const SizedBox(
                     width: 10,
                   ),
-                  SharedIcon(size: size)
+                  SharedIcon(size: size, message: widget.message)
                 }
               ],
             ),
@@ -266,6 +293,12 @@ class BodyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<MessageController>();
+    double size;
+    if (message.isFoward != null && message.isFoward) {
+      size = 230;
+    } else {
+      size = 220;
+    }
     return GestureDetector(
       onLongPress: () {
         if (message.senderID == currentUser.id) {
@@ -277,7 +310,7 @@ class BodyCard extends StatelessWidget {
         await launchUrl(Uri.parse(message.text!));
       },
       child: Container(
-        constraints: const BoxConstraints(maxHeight: 220),
+        constraints: BoxConstraints(maxHeight: size),
         width: MediaQuery.of(context).size.width * 0.6,
         decoration: BoxDecoration(
             borderRadius: const BorderRadius.all(
@@ -340,7 +373,9 @@ class BodyCard extends StatelessWidget {
                       ),
                     ),
                     padding: const EdgeInsets.only(left: 5, right: 5),
-                    height: 48,
+                    height: (message.isFoward != null && message.isFoward)
+                        ? 44
+                        : 48,
                     // constraints:
                     //     const BoxConstraints(maxHeight: 48),
                     child: Text(
@@ -367,13 +402,14 @@ class TextMsg extends StatelessWidget {
       required this.message,
       required this.replyMessage,
       required this.controller,
-      required this.color});
+      required this.color,
+      required this.sender});
   User currentUser;
   final Message message;
   String idMessageData;
   Message? replyMessage;
   MessageController controller;
-
+  User? sender;
   Color color;
   @override
   Widget build(BuildContext context) {
@@ -389,6 +425,18 @@ class TextMsg extends StatelessWidget {
             ? CrossAxisAlignment.start
             : CrossAxisAlignment.end,
         children: [
+          if (message.isFoward != null && message.isFoward) ...{
+            Align(
+              alignment: Alignment.topRight,
+              child: Text(
+                "${sender!.name} forwarded a message",
+                style: const TextStyle(fontSize: 11),
+              ),
+            ),
+            const SizedBox(
+              height: 1,
+            )
+          },
           if (message.isReply) ...{
             BuildReplyMessage(
                 currentUser: currentUser,

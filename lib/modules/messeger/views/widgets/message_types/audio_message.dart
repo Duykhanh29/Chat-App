@@ -2,7 +2,9 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:chat_app/data/common/methods.dart';
 import 'package:chat_app/data/models/user.dart';
+import 'package:chat_app/modules/home/controllers/data_controller.dart';
 import 'package:chat_app/modules/messeger/controllers/message_controller.dart';
 import 'package:chat_app/modules/messeger/views/widgets/message_tile.dart';
 import 'package:flutter/material.dart';
@@ -96,6 +98,10 @@ class _AudioMessageState extends State<AudioMessage> {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<MessageController>();
+    final dataController = Get.find<DataController>();
+    final listAllUser = dataController.listAllUser.value;
+    User? sender =
+        CommonMethods.getUserFromID(listAllUser, widget.message.senderID);
     Message? replyMessage;
     if (widget.message.isReply) {
       replyMessage = controller.findMessageFromIdAndUser(
@@ -105,8 +111,13 @@ class _AudioMessageState extends State<AudioMessage> {
       print(
           "New Value at id ${widget.message.idMessage}: ID: ${replyMessage.idMessage} text: ${replyMessage.text} type: ${replyMessage.chatMessageType}");
     }
-    if (widget.message.isReply) {
+    if (widget.message.isReply &&
+        (widget.message.isFoward != null && widget.message.isFoward)) {
+      size = 130;
+    } else if (widget.message.isReply) {
       size = 120;
+    } else if (widget.message.isFoward != null && widget.message.isFoward) {
+      size = 50;
     } else {
       size = 40;
     }
@@ -122,6 +133,18 @@ class _AudioMessageState extends State<AudioMessage> {
               ? CrossAxisAlignment.start
               : CrossAxisAlignment.end,
           children: [
+            if (widget.message.isFoward != null && widget.message.isFoward) ...{
+              Align(
+                alignment: Alignment.topRight,
+                child: Text(
+                  "${sender!.name} forwarded a message",
+                  style: const TextStyle(fontSize: 11),
+                ),
+              ),
+              const SizedBox(
+                height: 2,
+              )
+            },
             if (widget.message.isReply) ...{
               //if (widget.message.isSender!) ...{
               BuildReplyMessage(
@@ -140,7 +163,10 @@ class _AudioMessageState extends State<AudioMessage> {
                         : MainAxisAlignment.end,
                 children: [
                   if (widget.message.senderID == widget.currentUser.id) ...{
-                    SharedIcon(size: size),
+                    SharedIcon(
+                      size: size,
+                      message: widget.message,
+                    ),
                     const SizedBox(
                       width: 15,
                     ),
@@ -251,7 +277,10 @@ class _AudioMessageState extends State<AudioMessage> {
                     const SizedBox(
                       width: 15,
                     ),
-                    SharedIcon(size: size)
+                    SharedIcon(
+                      size: size,
+                      message: widget.message,
+                    )
                   }
                 ],
               ),

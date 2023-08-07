@@ -63,6 +63,99 @@ class MessageController extends GetxController {
   RxList<String> listLink = RxList<String>();
   RxList<Map<String, String>>? listMedia = RxList<Map<String, String>>();
 
+  // for forward
+  RxList<User> searchUsers = <User>[].obs;
+  RxList<MessageData> listMsgDataForForward = <MessageData>[].obs;
+  // for check box
+  RxList<User> checkBoxUsers = <User>[].obs;
+  RxList<MessageData> checkBoxMsgDataForForward = <MessageData>[].obs;
+  // functions for forward
+  List<User>? getUsersForSendingForward(
+      List<MessageData> listMsgData, List<User>? listUser) {
+    List<User> result = [];
+    for (var user in listAllUser) {
+      if (!isCheckExistUser(listMsgData, user)) {
+        result.add(user);
+      }
+    }
+    return result;
+  }
+
+  void filterSendForward(
+      String searchKey, List<MessageData> rootedList, List<User>? listUser) {
+    List<MessageData> list = [];
+    if (searchKey.isEmpty) {
+      listMsgDataForForward.value = rootedList;
+      searchUsers.value = getUsersForSendingForward(rootedList, listUser)!;
+    } else {
+      list = rootedList.where((data) {
+        List<MessageData> temtList = [];
+        if (data.receivers!.length == 2) {
+          String? receiver = CommonMethods.getUserFromListReceiverIDs(
+              data.receivers, authController.currentUser.value);
+          User? user = userGetUserFromIDBYGetX(receiver!);
+          print(user!.name
+              .toString()
+              .toLowerCase()
+              .contains(searchKey.toLowerCase()));
+          return user.name
+              .toString()
+              .toLowerCase()
+              .contains(searchKey.toLowerCase());
+        } else {
+          return data.chatName
+              .toString()
+              .toLowerCase()
+              .contains(searchKey.toLowerCase());
+        }
+      }).toList();
+      List<User> userList = [];
+      for (var user in listUser!) {
+        if (!isCheckExistUser(rootedList, user)) {
+          userList.add(user);
+        }
+      }
+      searchUsers.value = userList
+          .where((data) => data.name
+              .toString()
+              .toLowerCase()
+              .contains(searchKey.toLowerCase()))
+          .toList();
+      listMsgDataForForward.value = list;
+    }
+  }
+
+  void addUserInSendForward(User newUser) {
+    checkBoxUsers.value.add(newUser);
+  }
+
+  void removeUserInSendForward(User user) {
+    checkBoxUsers.value.remove(user);
+  }
+
+  void addMsgDataInSendForward(MessageData msgData) {
+    checkBoxMsgDataForForward.value.add(msgData);
+  }
+
+  void removeMsgDataInSendForward(MessageData msgData) {
+    checkBoxMsgDataForForward.value.remove(msgData);
+  }
+
+  void setForForward(List<MessageData> rootedList, List<User>? listUser) {
+    listMsgDataForForward.value = rootedList;
+
+    searchUsers.value = getUsersForSendingForward(rootedList, listUser)!;
+  }
+
+  void resetForForward() {
+    checkBoxMsgDataForForward.value = [];
+    checkBoxUsers.value = [];
+    listMsgDataForForward.value = [];
+    searchUsers.value = [];
+  }
+
+  // end forward
+
   void resetReceivers() {
     aReceiver.value = null;
     listReceivers.value = <User>[].obs;
@@ -1060,7 +1153,6 @@ class MessageController extends GetxController {
     });
   }
 }
-
 
 // what is this function
 

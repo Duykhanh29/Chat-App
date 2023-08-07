@@ -1,4 +1,5 @@
 import 'package:chat_app/data/common/methods.dart';
+import 'package:chat_app/modules/home/controllers/data_controller.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
 import 'package:chat_app/data/models/message_data.dart';
@@ -22,7 +23,6 @@ class LocationMessage extends StatelessWidget {
   User currentUser;
   final Message message;
   String idMessageData;
-  double size = 60;
 
   Future openGoogleMap(double latitude, double longitude) async {
     // try {
@@ -41,12 +41,25 @@ class LocationMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<MessageController>();
+    final dataController = Get.find<DataController>();
+    final listAllUser = dataController.listAllUser.value;
+    User? sender = CommonMethods.getUserFromID(listAllUser, message.senderID);
     final listUser = controller.relatedUserToCurrentUser.value;
     final user = CommonMethods.getUserFromID(listUser, message.senderID);
-    if (message.isReply) {
+    double size = 65;
+    double size2 = 60;
+    if (message.isReply && (message.isFoward != null && message.isFoward)) {
+      size = 155;
+      size2 = 75;
+    } else if (message.isReply) {
       size = 145;
+      size2 = 65;
+    } else if (message.isFoward != null && message.isFoward) {
+      size = 80;
+      size2 = 80;
     } else {
-      size = 65;
+      size = 70;
+      size2 = 65;
     }
     Message? replyMessage;
     if (message.isReply) {
@@ -55,13 +68,9 @@ class LocationMessage extends StatelessWidget {
       print(
           "New Value at ${message.idMessage}: ID: ${replyMessage.idMessage} text: ${replyMessage.text} type: ${replyMessage.chatMessageType}");
     }
-
     return Container(
-      decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: const Color.fromARGB(255, 148, 144, 143)),
       height: size,
-      width: MediaQuery.of(context).size.width * 0.45,
+      width: MediaQuery.of(context).size.width * 0.65,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -71,51 +80,91 @@ class LocationMessage extends StatelessWidget {
                 replyMessage: replyMessage!,
                 replyUserID: message.replyToUserID!)
           },
-          GestureDetector(
-            onTap: () async {
-              final List<String> list = message.text!.split(",");
-              print("Print llist\n");
-              for (var element in list) {
-                print(element);
-              }
-              var latitude = double.parse(list.first);
-              var longitude = double.parse(list.last);
-              await openGoogleMap(latitude, longitude);
-            },
+          Flexible(
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              mainAxisAlignment: message.senderID != currentUser.id
+                  ? MainAxisAlignment.start
+                  : MainAxisAlignment.end,
+              crossAxisAlignment: message.senderID != currentUser.id
+                  ? CrossAxisAlignment.start
+                  : CrossAxisAlignment.end,
               children: [
-                const Center(
-                  child: Icon(
-                    Icons.telegram,
-                    color: Colors.blue,
+                if (message.senderID == currentUser.id) ...{
+                  SharedIcon(size: size, message: message),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                },
+                Container(
+                  height: size2,
+                  width: MediaQuery.of(context).size.width * 0.45,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (message.isFoward != null && message.isFoward) ...{
+                        Center(
+                          child: Text(
+                            "${sender!.name} forwarded a message",
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        ),
+                        const SizedBox(
+                          height: 1,
+                        )
+                      },
+                      Container(
+                        height: 65,
+                        width: MediaQuery.of(context).size.width * 0.45,
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            color: const Color.fromARGB(255, 148, 144, 143)),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            const Center(
+                              child: Icon(
+                                Icons.telegram,
+                                color: Colors.blue,
+                              ),
+                            ),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                const Text(
+                                  "Location",
+                                  style: TextStyle(
+                                      fontSize: 20,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(
+                                  height: 4,
+                                ),
+                                Text(
+                                  user!.name ?? "No name",
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.black,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      )
+                    ],
                   ),
                 ),
-                Column(
-                  children: [
-                    const Text(
-                      "Location",
-                      style: TextStyle(
-                          fontSize: 20,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(
-                      height: 4,
-                    ),
-                    Text(
-                      user!.name ?? "No name",
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.black,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
+                if (message.senderID != currentUser.id) ...{
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  SharedIcon(size: size, message: message)
+                }
               ],
             ),
-          )
+          ),
         ],
       ),
     );

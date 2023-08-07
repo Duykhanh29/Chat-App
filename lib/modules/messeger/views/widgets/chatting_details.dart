@@ -691,13 +691,13 @@ class ChattingDetails extends GetView<MessageController> {
                                   text: "${currentUser.name} was left",
                                   messageStatus: MessageStatus.RECEIVED);
                               messageController.sendAMessage(msg, messageData);
-                              // send notification to others
-                              CommonMethods.sendNotifications(
-                                  receivers,
-                                  currentUser,
-                                  receiver,
-                                  messageData,
-                                  "${currentUser.name} was left");
+                              // // send notification to others
+                              // CommonMethods.sendNotifications(
+                              //     receivers,
+                              //     currentUser,
+                              //     receiver,
+                              //     messageData,
+                              //     "${currentUser.name} was left");
                             },
                             onCancel: () {
                               Get.back();

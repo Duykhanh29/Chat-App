@@ -92,57 +92,29 @@ class _VideoViewPageState extends State<VideoViewPage> {
             ),
             Positioned(
               bottom: 0,
-              child: Container(
-                color: Colors.black38,
-                width: MediaQuery.of(context).size.width,
-                padding: EdgeInsets.symmetric(vertical: 5, horizontal: 8),
-                child: TextFormField(
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                  ),
-                  maxLines: 6,
-                  minLines: 1,
-                  decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: "Add Caption....",
-                      prefixIcon: Icon(
-                        Icons.add_photo_alternate,
-                        color: Colors.white,
-                        size: 27,
-                      ),
-                      hintStyle: TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                      ),
-                      suffixIcon: CircleAvatar(
-                          radius: 27,
-                          backgroundColor: Colors.tealAccent[700],
-                          child: IconButton(
-                              onPressed: () async {
-                                await storage.uploadFile(
-                                    widget.path,
-                                    widget.fileName,
-                                    widget.messageData.idMessageData!,
-                                    'videos');
-                                String url = await storage.downloadURL(
-                                    widget.fileName,
-                                    widget.messageData.idMessageData!,
-                                    'videos');
-                                Message message = Message(
-                                    text: url,
-                                    chatMessageType: ChatMessageType.VIDEO,
-                                    isSeen: false,
-                                    messageStatus: widget.messageStatus,
-                                    dateTime: Timestamp.now(),
-                                    senderID: widget.sender!.id);
-                                message.showALlAttribute();
-                                controller.sendAMessage(
-                                    message, widget.messageData);
-                                Get.back();
-                                Get.back();
-                              },
-                              icon: const Icon(Icons.arrow_back)))),
+              right: 0,
+              child: CircleAvatar(
+                radius: 27,
+                backgroundColor: Colors.tealAccent[700],
+                child: IconButton(
+                  onPressed: () async {
+                    await storage.uploadFile(widget.path, widget.fileName,
+                        widget.messageData.idMessageData!, 'videos');
+                    String url = await storage.downloadURL(widget.fileName,
+                        widget.messageData.idMessageData!, 'videos');
+                    Message message = Message(
+                        text: url,
+                        chatMessageType: ChatMessageType.VIDEO,
+                        isSeen: false,
+                        messageStatus: widget.messageStatus,
+                        dateTime: Timestamp.now(),
+                        senderID: widget.sender!.id);
+                    message.showALlAttribute();
+                    controller.sendAMessage(message, widget.messageData);
+                    Get.back();
+                    Get.back();
+                  },
+                  icon: const Icon(Icons.telegram_outlined),
                 ),
               ),
             ),
