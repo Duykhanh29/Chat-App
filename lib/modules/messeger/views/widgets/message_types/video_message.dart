@@ -120,7 +120,7 @@ class _VideoPlayState extends State<VideoPlay> {
     // TODO: implement initState
     // loadVideoPlayer();
     // _initializeVideoPlayerFuture = controller.initialize();
-    // super.initState();
+    super.initState();
     //  String file = await rootBundle.loadString('assets/videos/video.mp4');
     controller = VideoPlayerController.network(widget.message.text!)
       ..addListener(() => setState(() {

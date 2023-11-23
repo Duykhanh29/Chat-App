@@ -740,7 +740,7 @@ class _InputerState extends State<Inputer> {
                       chatMessageType = ChatMessageType.IMAGE;
                     } else {
                       type = 'audios';
-                      chatMessageType = ChatMessageType.AUDIO;
+                      chatMessageType = ChatMessageType.AUDIO; 
                     }
                     bool isSuccess = await widget.storage.uploadFile(
                         path, fileName, messageData.idMessageData!, type);
