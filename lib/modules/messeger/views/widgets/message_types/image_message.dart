@@ -30,7 +30,7 @@ class ImageMessage extends StatelessWidget {
     final listAllUser = dataController.listAllUser.value;
     User? sender = CommonMethods.getUserFromID(listAllUser, message.senderID);
     Message? replyMessage;
-    if (message.isReply) {
+    if (message.isReply != null && message.isReply!) {
       replyMessage = controller.findMessageFromIdAndUser(
           message.idReplyText!, message.replyToUserID!, idMessageData);
       print(
@@ -38,7 +38,7 @@ class ImageMessage extends StatelessWidget {
     }
     return Container(
       width: MediaQuery.of(context).size.width * 0.75,
-      height: message.isReply
+      height: message.isReply != null && message.isReply!
           ? (message.isFoward != null && message.isFoward)
               ? MediaQuery.of(context).size.width * 0.64
               : MediaQuery.of(context).size.width * 0.6
@@ -65,7 +65,7 @@ class ImageMessage extends StatelessWidget {
               height: 1,
             )
           },
-          if (message.isReply) ...{
+          if (message.isReply != null && message.isReply!) ...{
             BuildReplyMessage(
                 currentUser: currentUser,
                 replyMessage: replyMessage!,

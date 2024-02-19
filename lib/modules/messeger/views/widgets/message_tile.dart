@@ -152,8 +152,8 @@ class MessageTile extends GetView<MessageController> {
     final currentUser = authController.currentUser.value;
     User? sender = CommonMethods.getUserFromID(listAllUser, message.senderID);
     return SwipeTo(
-      onLeftSwipe: () {},
-      onRightSwipe: () {
+      onLeftSwipe: (details) {},
+      onRightSwipe: (details) {
         if (!message.isDeleted) {
           // if (!message.isSender!) {
           //   print('Test 2');

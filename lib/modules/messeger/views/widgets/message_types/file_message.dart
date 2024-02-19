@@ -27,13 +27,13 @@ class FileMessage extends StatelessWidget {
     final controller = Get.find<MessageController>();
     Message?
         replyMessage; // this is a reply message to show in the main message
-    if (message.isReply) {
+    if (message.isReply != null && message.isReply!) {
       replyMessage = controller.findMessageFromIdAndUser(
           message.idReplyText!, message.replyToUserID!, idMessageData);
       print(
           "New Value at ${message.idMessage}: ID: ${replyMessage.idMessage} text: ${replyMessage.text} type: ${replyMessage.chatMessageType}");
     }
-    if (message.isReply) {
+    if (message.isReply != null && message.isReply!) {
       size = 165;
     } else {
       size = 85;

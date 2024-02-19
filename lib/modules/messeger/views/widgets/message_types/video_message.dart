@@ -31,15 +31,17 @@ class VideoMessage extends StatelessWidget {
     final listAllUser = dataController.listAllUser.value;
     Message?
         replyMessage; // this is a reply message to show in the main message
-    if (message.isReply) {
+    if (message.isReply != null && message.isReply!) {
       replyMessage = controller.findMessageFromIdAndUser(
           message.idReplyText!, message.replyToUserID!, idMessageData);
       print(
           "New Value at ${message.idMessage}: ID: ${replyMessage.idMessage} text: ${replyMessage.text} type: ${replyMessage.chatMessageType}");
     }
-    if (message.isReply && (message.isFoward != null && message.isFoward)) {
+    if (message.isReply != null &&
+        message.isReply! &&
+        (message.isFoward != null && message.isFoward)) {
       size = 230;
-    } else if (message.isReply) {
+    } else if (message.isReply != null && message.isReply!) {
       size = 220;
     } else if (message.isFoward != null && message.isFoward) {
       size = 150;
@@ -72,7 +74,7 @@ class VideoMessage extends StatelessWidget {
               height: 1,
             )
           },
-          if (message.isReply) ...{
+          if (message.isReply != null && message.isReply!) ...{
             BuildReplyMessage(
                 currentUser: currentUser,
                 replyMessage: replyMessage!,

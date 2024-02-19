@@ -73,7 +73,7 @@ class TextMessage extends GetView<MessageController> {
     print("And reccent User: \n");
     currentUser.showALlAttribute();
     Message? replyMessage;
-    if (message.isReply) {
+    if (message.isReply != null && message.isReply!) {
       replyMessage = controller.findMessageFromIdAndUser(
           message.idReplyText!, message.replyToUserID!, idMessageData);
       print(
@@ -198,10 +198,11 @@ class _LinkURLState extends State<LinkURL> {
   double size = 220;
   @override
   Widget build(BuildContext context) {
-    if (widget.message.isReply &&
+    if (widget.message.isReply != null &&
+        widget.message.isReply! &&
         (widget.message.isFoward != null && widget.message.isFoward)) {
       size = 315;
-    } else if (widget.message.isReply) {
+    } else if (widget.message.isReply != null && widget.message.isReply!) {
       size = 300;
     } else if (widget.message.isFoward != null && widget.message.isFoward) {
       size = 230;
@@ -237,7 +238,7 @@ class _LinkURLState extends State<LinkURL> {
               height: 1,
             )
           },
-          if (widget.message.isReply) ...{
+          if (widget.message.isReply != null && widget.message.isReply!) ...{
             BuildReplyMessage(
                 currentUser: widget.currentUser,
                 replyMessage: widget.replyMessage!,
@@ -437,7 +438,7 @@ class TextMsg extends StatelessWidget {
               height: 1,
             )
           },
-          if (message.isReply) ...{
+          if (message.isReply != null && message.isReply!) ...{
             BuildReplyMessage(
                 currentUser: currentUser,
                 replyMessage: replyMessage!,

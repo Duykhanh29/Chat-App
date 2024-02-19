@@ -67,7 +67,7 @@ class Message {
   ChatMessageType? chatMessageType;
   int? longTime;
   String? idMessage;
-  bool isReply;
+  bool? isReply;
   String? idReplyText;
   String? replyToUserID;
   List<String>? seenBy;

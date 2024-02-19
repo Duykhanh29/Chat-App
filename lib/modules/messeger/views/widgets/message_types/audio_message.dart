@@ -103,7 +103,7 @@ class _AudioMessageState extends State<AudioMessage> {
     User? sender =
         CommonMethods.getUserFromID(listAllUser, widget.message.senderID);
     Message? replyMessage;
-    if (widget.message.isReply) {
+    if (widget.message.isReply != null && widget.message.isReply!) {
       replyMessage = controller.findMessageFromIdAndUser(
           widget.message.idReplyText!,
           widget.message.replyToUserID!,
@@ -111,10 +111,11 @@ class _AudioMessageState extends State<AudioMessage> {
       print(
           "New Value at id ${widget.message.idMessage}: ID: ${replyMessage.idMessage} text: ${replyMessage.text} type: ${replyMessage.chatMessageType}");
     }
-    if (widget.message.isReply &&
+    if (widget.message.isReply != null &&
+        widget.message.isReply! &&
         (widget.message.isFoward != null && widget.message.isFoward)) {
       size = 130;
-    } else if (widget.message.isReply) {
+    } else if (widget.message.isReply != null && widget.message.isReply!) {
       size = 120;
     } else if (widget.message.isFoward != null && widget.message.isFoward) {
       size = 50;
@@ -145,7 +146,7 @@ class _AudioMessageState extends State<AudioMessage> {
                 height: 2,
               )
             },
-            if (widget.message.isReply) ...{
+            if (widget.message.isReply != null && widget.message.isReply!) ...{
               //if (widget.message.isSender!) ...{
               BuildReplyMessage(
                   currentUser: widget.currentUser,

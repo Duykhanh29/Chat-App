@@ -48,10 +48,12 @@ class LocationMessage extends StatelessWidget {
     final user = CommonMethods.getUserFromID(listUser, message.senderID);
     double size = 65;
     double size2 = 60;
-    if (message.isReply && (message.isFoward != null && message.isFoward)) {
+    if (message.isReply != null &&
+        message.isReply! &&
+        (message.isFoward != null && message.isFoward)) {
       size = 155;
       size2 = 75;
-    } else if (message.isReply) {
+    } else if (message.isReply != null && message.isReply!) {
       size = 145;
       size2 = 65;
     } else if (message.isFoward != null && message.isFoward) {
@@ -62,7 +64,7 @@ class LocationMessage extends StatelessWidget {
       size2 = 65;
     }
     Message? replyMessage;
-    if (message.isReply) {
+    if (message.isReply != null && message.isReply!) {
       replyMessage = controller.findMessageFromIdAndUser(
           message.idReplyText!, message.replyToUserID!, idMessageData);
       print(
@@ -74,7 +76,7 @@ class LocationMessage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (message.isReply) ...{
+          if (message.isReply != null && message.isReply!) ...{
             BuildReplyMessage(
                 currentUser: currentUser,
                 replyMessage: replyMessage!,
